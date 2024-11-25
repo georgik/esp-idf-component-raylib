@@ -1,6 +1,6 @@
 ## IDF Component Manager Manifest File
 dependencies:
-  georgik/sdl:
+  georgik/raylib:
     version: "*"
     override_path: "../../../raylib"
     # git: https://github.com/georgik/esp-idf-component-raylib.git
