@@ -3,7 +3,7 @@ description: Raylib (ESP-IDF wrapper on upstream Raylib)
 license: Zlib
 url: https://www.raylib.com/
 repository: https://github.com/georgik/esp-idf-component-raylib
-version: 5.5~0
+version: 5.5.0~0
 
 dependencies:
   espressif/esp_lcd_touch_tt21100: "*"
