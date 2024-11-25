@@ -335,10 +335,34 @@ void DisableCursor(void)
     // CORE.Input.Mouse.cursorHidden = true;
 }
 
+
+#include "bsp/esp-bsp.h"
+#include "bsp/display.h"
+#include "esp_lcd_panel_ops.h"
+
+static SemaphoreHandle_t lcd_semaphore;
+static int max_chunk_height = 4;
+esp_lcd_panel_handle_t panel_handle = NULL;
+esp_lcd_panel_io_handle_t panel_io_handle = NULL;
+static uint16_t *rgb565_buffer = NULL;
+
 // Swap back buffer with front buffer (screen drawing)
 void SwapScreenBuffer(void)
 {
-    // eglSwapBuffers(platform.device, platform.surface);
+    int screen_height = BSP_LCD_H_RES;
+    int screen_width = BSP_LCD_V_RES;
+    // Iterate over the framebuffer in chunks
+    for (int y = 0; y < screen_height; y += max_chunk_height) {
+        int height = (y + max_chunk_height > screen_height) ? (screen_height - y) : max_chunk_height;
+        uint16_t *src_pixels = (uint16_t *)rgb565_buffer + (y * screen_width);
+
+            // Draw the scaled output to the LCD
+            ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, 0, y, screen_width, (y + height), src_pixels));
+        }
+
+    // Wait for the current chunk to finish transmission
+    xSemaphoreTake(lcd_semaphore, portMAX_DELAY);
+
 }
 
 //----------------------------------------------------------------------------------
@@ -404,10 +428,59 @@ void PollInputEvents(void)
 // Module Internal Functions Definition
 //----------------------------------------------------------------------------------
 
+
+#ifdef CONFIG_IDF_TARGET_ESP32P4
+static bool lcd_event_callback(esp_lcd_panel_handle_t panel_io, esp_lcd_dpi_panel_event_data_t *edata, void *user_ctx)
+{
+    xSemaphoreGive(lcd_semaphore);
+    return false;
+}
+#else
+static bool lcd_event_callback(esp_lcd_panel_io_handle_t io, esp_lcd_panel_io_event_data_t *event_data, void *user_ctx)
+{
+    xSemaphoreGive(lcd_semaphore);
+    return false;
+}
+#endif
+
+bool CreateWindowFramebuffer(int w)
+{
+    // Allocate RGB565 buffer in IRAM
+    rgb565_buffer = heap_caps_malloc(w * max_chunk_height * sizeof(uint16_t), MALLOC_CAP_32BIT | MALLOC_CAP_INTERNAL);
+
+
+    // Create a semaphore to synchronize LCD transactions
+    lcd_semaphore = xSemaphoreCreateBinary();
+    if (!lcd_semaphore) {
+    }
+
+    const esp_lcd_dpi_panel_event_callbacks_t callback = {
+        .on_color_trans_done = lcd_event_callback,
+    };
+    esp_lcd_dpi_panel_register_event_callbacks(panel_handle, &callback, NULL);
+
+    return true;
+}
+
 // Initialize platform: graphics, inputs and more
 int InitPlatform(void)
 {
+    #ifdef CONFIG_IDF_TARGET_ESP32P4
+        ESP_ERROR_CHECK(bsp_display_new(NULL, &panel_handle, &panel_io_handle));
+    #else
+        const bsp_display_config_t bsp_disp_cfg = {
+            .max_transfer_sz = (BSP_LCD_H_RES * BSP_LCD_V_RES) * sizeof(uint16_t),
+        };
+        ESP_ERROR_CHECK(bsp_display_new(&bsp_disp_cfg, &panel_handle, &panel_io_handle));
+    #endif
 
+        ESP_ERROR_CHECK(bsp_display_backlight_on());
+
+    #ifndef CONFIG_IDF_TARGET_ESP32P4
+        esp_lcd_panel_disp_on_off(panel_handle, true);
+    #endif
+
+    CreateWindowFramebuffer(BSP_LCD_H_RES);
     TRACELOG(LOG_INFO, "PLATFORM: CUSTOM: Initialized successfully");
 
     return 0;
