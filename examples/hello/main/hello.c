@@ -24,13 +24,13 @@ void app_main(void)
         ClearBackground(RAYWHITE);
 
         // Draw a rectangle
-        DrawRectangle(50, 50, 140, 100, BLUE);
+        // DrawRectangle(50, 50, 140, 100, BLUE);
 
         // Draw a circle
-        DrawCircle(screenWidth / 2, screenHeight / 2, 40, RED);
+        // DrawCircle(screenWidth / 2, screenHeight / 2, 40, RED);
 
         // Draw text
-        DrawText("Hello, ESP32!", 10, 10, 20, DARKGRAY);
+        // DrawText("Hello, ESP32!", 10, 10, 20, DARKGRAY);
 
         // End drawing
         EndDrawing();

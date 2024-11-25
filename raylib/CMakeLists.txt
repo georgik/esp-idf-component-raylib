@@ -3,8 +3,10 @@ idf_component_register(
         #"src/raylib_wrapper.c"
         # Core Raylib source files for video rendering
         "raylib/src/rcore.c"
+        "raylib/src/rtext.c"
         "raylib/src/rtextures.c"
         "raylib/src/rmodels.c"
+        "raylib/src/rshapes.c"
         "raylib/src/utils.c"
 
         "src/platforms/rcore_esp_idf.c"

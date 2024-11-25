@@ -1,0 +1,15 @@
+## IDF Component Manager Manifest File
+description: Raylib (ESP-IDF wrapper on upstream Raylib)
+license: Zlib
+url: https://www.raylib.com/
+repository: https://github.com/georgik/esp-idf-component-raylib
+version: 5.5~0
+
+dependencies:
+  espressif/esp_lcd_touch_tt21100: "*"
+  ## Required IDF version
+  idf:
+    version: ">=5.5.0"
+
+examples:
+  - path: ../examples/hello
