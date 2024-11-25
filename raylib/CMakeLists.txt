@@ -13,3 +13,7 @@ idf_component_register(
         esp_lcd
 )
 
+# Suppress incompatible pointer type warnings
+# Reason: M3D_GETSTR
+target_compile_options(${COMPONENT_TARGET} PRIVATE -Wno-incompatible-pointer-types)
+
