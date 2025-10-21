@@ -12,4 +12,4 @@ dependencies:
     version: ">=5.5.0"
 
 examples:
-  - path: ../examples/hello
+  - path: ./examples/hello
