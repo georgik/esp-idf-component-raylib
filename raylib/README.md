@@ -22,7 +22,7 @@ Should work on other ESP32 boards with SPI LCD panels (may require BSP dependenc
 
 ## Requirements
 
-- ESP-IDF 6.0 or later
+- ESP-IDF 5.5 or later (tested with latest master)
 - ESP32-S3 or similar with PSRAM (recommended for framebuffer)
 - Board Support Package (BSP) for your target board
 

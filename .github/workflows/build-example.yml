@@ -65,7 +65,7 @@ jobs:
       - name: esp-idf build and merge binaries
         uses: espressif/esp-idf-ci-action@v1.1.0
         with:
-          esp_idf_version: v6.0
+          esp_idf_version: latest
           target: ${{ env.TARGET }}
           path: '.'
           command: |
