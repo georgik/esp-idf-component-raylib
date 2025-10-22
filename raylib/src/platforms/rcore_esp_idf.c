@@ -348,14 +348,32 @@ static uint16_t *framebuffer = NULL;
 static int screen_width = 0;
 static int screen_height = 0;
 
+// Direct access to rlsw color buffer
+extern void *swGetColorBuffer(int *w, int *h);
+
 // Swap back buffer with front buffer (screen drawing)
 void SwapScreenBuffer(void)
 {
     if (!framebuffer) return;
     
-    // Copy framebuffer from software renderer to our buffer
-    // RL_PIXELFORMAT_UNCOMPRESSED_R5G6B5 = 7 (RGB565 format)
-    rlCopyFramebuffer(0, 0, screen_width, screen_height, 7, framebuffer);
+    // Get direct pointer to software renderer's RGB565 framebuffer
+    int sw_width, sw_height;
+    uint16_t *sw_framebuffer = (uint16_t *)swGetColorBuffer(&sw_width, &sw_height);
+    
+    if (!sw_framebuffer || sw_width != screen_width || sw_height != screen_height) {
+        TRACELOG(LOG_ERROR, "PLATFORM: Software framebuffer mismatch");
+        return;
+    }
+    
+    // Direct memcpy - both buffers are RGB565
+    memcpy(framebuffer, sw_framebuffer, screen_width * screen_height * sizeof(uint16_t));
+    
+    // Byte-swap for LCD endianness (SPI LCDs expect big-endian RGB565)
+    int total_pixels = screen_width * screen_height;
+    for (int i = 0; i < total_pixels; i++) {
+        uint16_t pixel = framebuffer[i];
+        framebuffer[i] = (pixel >> 8) | (pixel << 8);
+    }
     
     // Send framebuffer to LCD in chunks - SPI driver queues them automatically
     // Pattern from ESP-BSP noglib example

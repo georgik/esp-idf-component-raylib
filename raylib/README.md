@@ -83,13 +83,26 @@ Key functions implemented:
 - `SwapScreenBuffer()` - Copy software-rendered framebuffer to LCD via `esp_lcd_panel_draw_bitmap`
 - `CreateWindowFramebuffer()` - Allocate RGB565 buffer in PSRAM
 
+### Color Mapping Implementation
+
+The framebuffer uses RGB565 format (5 bits red, 6 bits green, 5 bits blue). The implementation handles color format correctly through:
+
+1. **Direct Framebuffer Access**: Uses `swGetColorBuffer()` to access the software renderer's internal RGB565 buffer directly, avoiding lossy format conversions
+2. **Byte-Order Conversion**: SPI LCD panels (like ILI9341 on ESP32-S3-BOX-3) expect big-endian RGB565 format, so bytes are swapped before transmission:
+   ```c
+   framebuffer[i] = (pixel >> 8) | (pixel << 8);  // Little-endian to big-endian
+   ```
+
+**Important**: Earlier implementations used `rlCopyFramebuffer()` which performed RGB565 → RGBA8888 → RGB565 conversion, corrupting colors. The current implementation uses direct memory copy to preserve color accuracy.
+
 ## Known Issues / TODO
 
-- [ ] Color mapping (RGB vs BGR) may need adjustment per panel
+- [x] ~~Color mapping~~ - Fixed: Direct RGB565 framebuffer access with byte-swapping for SPI LCDs
 - [ ] Input handling (touch, buttons) not yet implemented
 - [ ] Audio module disabled (no esp-idf audio backend)
 - [ ] 3D models disabled (requires filesystem APIs)
 - [ ] Performance optimization (currently ~10-15 FPS on ESP32-S3@240MHz)
+- [ ] Color format may need adjustment for non-SPI panels (e.g., parallel RGB, MIPI-DSI)
 
 ## Examples
 
