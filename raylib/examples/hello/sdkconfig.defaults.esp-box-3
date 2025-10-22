@@ -5,3 +5,6 @@ CONFIG_IDF_TARGET="esp32s3"
 CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# Increase main task stack size for software renderer (needs large stack for rlsw)
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=65536

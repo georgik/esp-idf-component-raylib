@@ -2,16 +2,16 @@
 dependencies:
   georgik/raylib:
     version: "*"
-    override_path: "../../../raylib"
+    override_path: "../../../../raylib"
     # git: https://github.com/georgik/esp-idf-component-raylib.git
 
   ## Required IDF version
   idf:
     version: ">=5.1.0"
 
-  # BSP - information reguired for SDL
-  espressif/esp-box-3:
-    version: "^1.2.0"
+  # BSP - No Graphical Library version (compatible with raylib)
+  espressif/esp-box-3_noglib:
+    version: "3.0.3"
     rules:
     - if: "${BUILD_BOARD} == esp-box-3"
 

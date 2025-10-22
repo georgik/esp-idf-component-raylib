@@ -5,6 +5,11 @@ url: https://www.raylib.com/
 repository: https://github.com/georgik/esp-idf-component-raylib
 version: 5.5.0~0
 
+files:
+  exclude:
+    - "raylib/CMakeLists.txt"  # Exclude raylib's own CMakeLists.txt to prevent it being treated as component
+    - "raylib/.git*"           # Exclude git metadata
+
 dependencies:
   espressif/esp_lcd_touch_tt21100: "*"
   ## Required IDF version
