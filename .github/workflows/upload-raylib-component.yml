@@ -1,0 +1,71 @@
+name: Upload Raylib Component to Espressif Component Registry
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Component Version (e.g., 5.6.0~0)'
+        required: true
+        default: '5.6.0~0'
+        type: string
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+
+jobs:
+  upload_component:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          
+      - name: Set version from tag if available
+        id: set_version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT  
+          else
+            # Default version from idf_component.yml
+            echo "version=5.6.0~0" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Update component version in yml
+        run: |
+          sed -i "s/^version:.*/version: ${{ steps.set_version.outputs.version }}/" raylib/idf_component.yml
+          
+      - name: Display component info
+        run: |
+          echo "Component: raylib"
+          echo "Namespace: georgik"  
+          echo "Version: ${{ steps.set_version.outputs.version }}"
+          echo "Repository: https://github.com/georgik/esp-idf-component-raylib"
+          echo "---"
+          cat raylib/idf_component.yml
+          
+      - name: Upload Raylib component to ESP Component Registry
+        uses: espressif/upload-components-ci-action@v1
+        with:
+          name: "raylib"
+          namespace: "georgik"
+          directories: "raylib"
+          api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
+          
+      - name: Upload success notification
+        if: success()
+        run: |
+          echo "✅ Successfully uploaded Raylib v${{ steps.set_version.outputs.version }} to ESP Component Registry!"
+          echo "🔗 Available at: https://components.espressif.com/components/georgik/raylib"
+          echo "📋 Examples available via: idf.py create-project-from-example 'georgik/raylib=${{ steps.set_version.outputs.version }}:hello'"
+          
+      - name: Upload failure notification  
+        if: failure()
+        run: |
+          echo "❌ Failed to upload Raylib v${{ steps.set_version.outputs.version }} to ESP Component Registry"
+          echo "Please check the logs above for details"

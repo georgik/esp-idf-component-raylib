@@ -1,0 +1,71 @@
+name: Test Raylib Example
+
+on:
+  workflow_dispatch:
+    inputs:
+      prefix:
+        description: 'Prefix for binary name'
+        required: true
+        default: 'hello'
+  workflow_run:
+    workflows: ["Build Raylib Example"]
+    types:
+      - completed
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    strategy:
+      matrix:
+        board: [esp-box-3, esp32_p4_function_ev_board]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: build-example.yml
+          name: ${{ github.event.inputs.prefix || 'hello' }}-${{ matrix.board }}.bin
+          path: build.${{ matrix.board }}
+
+      - name: Use Wokwi CI Server
+        uses: wokwi/wokwi-ci-server-action@v1
+
+      - name: Simulate & take a screenshot
+        run: |
+          curl -L https://wokwi.com/ci/install.sh | sh
+          /home/runner/.wokwi/bin/wokwi-cli \
+            --timeout 12000 \
+            --timeout-exit-code 0 \
+            --screenshot-part "esp" \
+            --screenshot-time 5000 \
+            --elf "build.${{ matrix.board }}/${{ github.event.inputs.prefix || 'hello' }}-${{ matrix.board }}.bin" \
+            --fail-text 'Rebooting...' \
+            --screenshot-file "screenshot-${{ matrix.board }}.png" \
+            --serial-log-file 'wokwi-logs-${{ matrix.board }}.txt' \
+            "raylib/examples/hello/boards/${{ matrix.board }}"
+        env:
+          WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
+
+      - name: Flip screenshot vertically (Raylib coordinate system)
+        run: |
+          sudo apt-get update && sudo apt-get install -y imagemagick
+          convert "screenshot-${{ matrix.board }}.png" -flip "screenshot-${{ matrix.board }}.png"
+
+      - name: Upload Screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-${{ matrix.board }}
+          path: screenshot-${{ matrix.board }}.png
+
+      - name: Upload Wokwi Logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wokwi-logs-${{ matrix.board }}
+          path: wokwi-logs-${{ matrix.board }}.txt

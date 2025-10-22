@@ -108,6 +108,15 @@ The framebuffer uses RGB565 format (5 bits red, 6 bits green, 5 bits blue). The 
 
 - [hello](examples/hello/) - Basic shapes, text, animation
 
+## CI/CD
+
+This project includes GitHub Actions workflows for automated building and testing:
+
+- **Build**: Automatically builds examples for ESP32-S3-BOX-3, M5Stack Core S3, and ESP32-P4 Function EV Board
+- **Test**: Runs Wokwi simulations and captures screenshots
+
+See [.github/README.md](.github/README.md) for detailed CI/CD documentation.
+
 ## Contributing
 
 Contributions welcome! Especially:
