@@ -343,13 +343,8 @@ void DisableCursor(void)
 }
 
 
-#include "raylib_bsp.h"
-#include "esp_lcd_panel_ops.h"
+#include "esp_ray_port.h"
 
-static SemaphoreHandle_t lcd_semaphore = NULL;
-static int max_chunk_height = 48;  // Match ESP-BSP: 240/5 = 48 lines per chunk
-esp_lcd_panel_handle_t panel_handle = NULL;
-esp_lcd_panel_io_handle_t panel_io_handle = NULL;
 static uint16_t *framebuffer = NULL;
 static int screen_width = 0;
 static int screen_height = 0;
@@ -374,25 +369,11 @@ void SwapScreenBuffer(void)
     // Direct memcpy - both buffers are RGB565
     memcpy(framebuffer, sw_framebuffer, screen_width * screen_height * sizeof(uint16_t));
     
-    // Byte-swap for LCD endianness (SPI LCDs expect big-endian RGB565)
-    int total_pixels = screen_width * screen_height;
-    for (int i = 0; i < total_pixels; i++) {
-        uint16_t pixel = framebuffer[i];
-        framebuffer[i] = (pixel >> 8) | (pixel << 8);
+    // Flush via port layer (handles byte swapping and chunking)
+    esp_err_t ret = ray_port_flush_rgb565(framebuffer, 0, 0, screen_width, screen_height);
+    if (ret != ESP_OK) {
+        TRACELOG(LOG_ERROR, "PLATFORM: Failed to flush framebuffer: %d", ret);
     }
-    
-    // Send framebuffer to LCD in chunks - SPI driver queues them automatically
-    // Pattern from ESP-BSP noglib example
-    for (int y = 0; y < screen_height; y += max_chunk_height) {
-        int chunk_height = (y + max_chunk_height > screen_height) ? (screen_height - y) : max_chunk_height;
-        uint16_t *chunk_pixels = framebuffer + (y * screen_width);
-        
-        // Queue the chunk - driver handles it asynchronously
-        ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, 0, y, screen_width, y + chunk_height, chunk_pixels));
-    }
-    
-    // Note: ESP32-P4 DSI panels don't require waiting - data is transferred immediately
-    // Non-P4 SPI boards don't need to wait either - SPI driver queues transfers
 }
 
 //----------------------------------------------------------------------------------
@@ -459,15 +440,6 @@ void PollInputEvents(void)
 //----------------------------------------------------------------------------------
 
 
-// LCD event callback for SPI panels (not needed for DSI panels like ESP32-P4)
-#ifndef CONFIG_IDF_TARGET_ESP32P4
-static bool lcd_event_callback(esp_lcd_panel_io_handle_t io, esp_lcd_panel_io_event_data_t *event_data, void *user_ctx)
-{
-    xSemaphoreGive(lcd_semaphore);
-    return false;
-}
-#endif
-
 bool CreateWindowFramebuffer(int width, int height)
 {
     screen_width = width;
@@ -490,9 +462,6 @@ bool CreateWindowFramebuffer(int width, int height)
         framebuffer[i] = 0x07E0;  // RGB565 green
     }
 
-// ESP32-P4 uses DSI interface which doesn't require callbacks
-    // Non-P4 boards don't need semaphore - SPI driver handles queuing
-
     TRACELOG(LOG_INFO, "PLATFORM: Framebuffer allocated: %dx%d (RGB565)", width, height);
     return true;
 }
@@ -500,20 +469,17 @@ bool CreateWindowFramebuffer(int width, int height)
 // Initialize platform: graphics, inputs and more
 int InitPlatform(void)
 {
-    // Use raylib_bsp abstraction layer
-    ESP_ERROR_CHECK(raylib_bsp_display_init(&panel_handle, &panel_io_handle));
-    ESP_ERROR_CHECK(raylib_bsp_backlight_on());
-
-    #ifndef CONFIG_IDF_TARGET_ESP32P4
-        esp_lcd_panel_disp_on_off(panel_handle, true);
-    #endif
-
-    // Get display dimensions from BSP abstraction
-    int width = raylib_bsp_get_display_width();
-    int height = raylib_bsp_get_display_height();
+    // Get display dimensions from port layer
+    uint16_t width, height;
+    esp_err_t ret = ray_port_get_dimensions(&width, &height);
+    if (ret != ESP_OK || width == 0 || height == 0) {
+        TRACELOG(LOG_ERROR, "PLATFORM: Port not initialized or invalid dimensions. "
+                 "Call ray_port_init() and ray_port_add_display() before InitWindow().");
+        return -1;
+    }
     
     CreateWindowFramebuffer(width, height);
-    TRACELOG(LOG_INFO, "PLATFORM: ESP-IDF (%s): Initialized successfully", raylib_bsp_get_board_name());
+    TRACELOG(LOG_INFO, "PLATFORM: ESP-IDF initialized successfully (%dx%d)", width, height);
 
     return 0;
 }
@@ -524,11 +490,6 @@ void ClosePlatform(void)
     if (framebuffer) {
         heap_caps_free(framebuffer);
         framebuffer = NULL;
-    }
-    
-    if (lcd_semaphore) {
-        vSemaphoreDelete(lcd_semaphore);
-        lcd_semaphore = NULL;
     }
     
     TRACELOG(LOG_INFO, "PLATFORM: ESP-IDF: Closed successfully");

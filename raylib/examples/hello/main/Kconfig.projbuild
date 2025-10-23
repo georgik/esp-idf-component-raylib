@@ -1,0 +1,31 @@
+menu "Board Configuration"
+
+    choice BOARD_TYPE
+        prompt "Select Board"
+        default BOARD_CUSTOM
+        help
+            Select the target board for this application.
+
+        config BOARD_ESP_BOX_3
+            bool "ESP32-S3-BOX-3"
+            help
+                ESP32-S3-BOX-3 development board with 320x240 ILI9341 display.
+
+        config BOARD_M5STACK_CORE_S3
+            bool "M5Stack Core S3"
+            help
+                M5Stack Core S3 with 320x240 ILI9342C display.
+
+        config BOARD_ESP32_P4_FUNCTION_EV
+            bool "ESP32-P4 Function EV Board"
+            help
+                ESP32-P4 Function Evaluation Board with MIPI-DSI display.
+
+        config BOARD_CUSTOM
+            bool "Custom Board"
+            help
+                Custom board - you need to implement board_init_display() manually.
+
+    endchoice
+
+endmenu

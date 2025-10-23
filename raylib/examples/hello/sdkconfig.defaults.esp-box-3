@@ -7,8 +7,8 @@ CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 
-# Board selection for raylib_bsp abstraction layer
-CONFIG_RAYLIB_BOARD_ESP_BOX_3=y
+# Board selection (for BSP conditional compilation)
+CONFIG_BOARD_ESP_BOX_3=y
 
 # Increase main task stack size for software renderer (needs large stack for rlsw)
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=65536

@@ -4,30 +4,22 @@ dependencies:
     version: "*"
     override_path: "../../../../raylib"
 
-  georgik/raylib_bsp:
+  # Board-specific BSPs (noglib versions - without LVGL)
+  espressif/esp-box-3_noglib:
     version: "*"
-    override_path: "../../../../raylib_bsp"
+    matches:
+      - if: "$CONFIG{BOARD_ESP_BOX_3} == True"
+
+  espressif/m5stack_core_s3_noglib:
+    version: "*"
+    matches:
+      - if: "$CONFIG{BOARD_M5STACK_CORE_S3} == True"
+
+  espressif/esp32_p4_function_ev_board_noglib:
+    version: "*"
+    matches:
+      - if: "$CONFIG{BOARD_ESP32_P4_FUNCTION_EV} == True"
 
   ## Required IDF version
   idf:
     version: ">=5.1.0"
-
-  # Board-specific BSPs - conditional based on Kconfig selection
-  
-  # ESP32-S3-BOX-3 BSP (noglib version - without LVGL)
-  espressif/esp-box-3_noglib:
-    version: "*"
-    matches:
-      - if: "$CONFIG{RAYLIB_BOARD_ESP_BOX_3} == True"
-
-  # M5Stack Core S3 BSP (noglib version - without LVGL)
-  espressif/m5stack_core_s3_noglib:
-    version: "*"
-    matches:
-      - if: "$CONFIG{RAYLIB_BOARD_M5STACK_CORE_S3} == True"
-
-  # ESP32-P4 Function EV Board BSP (noglib version - without LVGL)
-  espressif/esp32_p4_function_ev_board_noglib:
-    version: "*"
-    matches:
-      - if: "$CONFIG{RAYLIB_BOARD_ESP32_P4_FUNCTION_EV} == True"
