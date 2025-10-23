@@ -1,19 +1,29 @@
 # Hello Raylib Example
 
-This example demonstrates running raylib with the software renderer on ESP-IDF.
+This example demonstrates running raylib with the software renderer on ESP-IDF using a board-agnostic port layer.
 
-Features:
-- Software renderer (no OpenGL) via raylib rlgl OpenGL 1.1 software backend
-- Double-buffered SPI transfers in chunks using esp-bsp pattern
-- Simple animation and centered text
-- Supports multiple ESP32 boards (ESP-BOX-3, M5Stack Core S3, ESP32-P4, etc.)
+## Features
+
+- **Port Layer Architecture**: Board-agnostic display abstraction (`esp_ray_port`)
+- **Software Renderer**: No OpenGL/GPU required (CPU-based rendering)
+- **Dynamic Dimensions**: Automatically queries display size from port
+- **Multi-Board Support**: Easy to add new boards via `board_init.c`
+- **Automatic Sync**: Semaphore-based synchronization for SPI and DSI panels
+- **Smart Byte Swapping**: Automatic for SPI panels, disabled for DSI
+- **Simple Animation**: Moving rectangle with centered text and color tests
 
 ## Supported Hardware
-- **ESP32-S3-BOX-3** - 320x240 ILI9341 (recommended)
-- **M5Stack Core S3** - 320x240 ILI9341
-- **ESP32-P4 Function EV** - 1280x800 MIPI-DSI
+
+**Fully Tested & Verified:**
+- **ESP32-S3-BOX-3** - 320x240 ILI9341 (SPI) ✅
+- **M5Stack Core S3** - 320x240 ILI9342C (SPI) ✅
+- **ESP32-P4 Function EV** - 1024x600 EK79007 (MIPI-DSI) ✅
+
+**Configurations Available:**
 - **ESP32-C6 DevKit** - Generic display support
 - **ESP32-C3 LCDKit** - Development kit
+
+**Note**: To add a new board, just update `main/board_init.c` and create a `sdkconfig.defaults.<board>` file.
 
 ## Build and Flash
 
@@ -57,27 +67,72 @@ espbrew --cli-only .
 
 Install ESPBrew: https://github.com/georgik/espbrew
 
-### Notes
-- PSRAM is required and used for renderer buffers
-- Board-specific configurations are in `sdkconfig.defaults.<board>` files
-- Each board configuration sets appropriate target, BSP, and optimization flags
-- **Board selection is done via Kconfig**: Each `sdkconfig.defaults.<board>` includes `CONFIG_RAYLIB_BOARD_*` which determines which BSP component is loaded
-- This allows multiple boards with the same target (e.g., ESP-BOX-3 and M5Stack Core S3 both use ESP32-S3) to use different BSPs
+### How It Works
 
-## Expected behavior
-- On startup, color test sequence: full-screen RED, GREEN, BLUE (1s each)
-- Then alternating background (sky-blue / light-gray), moving red square, and centered text "Hello ESP32!"
+1. **Board Selection**: Defined in `sdkconfig.defaults.<board>` via `CONFIG_BOARD_*`
+2. **Board Init**: `main/board_init.c` creates panel using ESP-BSP for selected board
+3. **Port Layer**: `esp_ray_port` provides board-agnostic display API
+4. **Raylib**: Queries dimensions and renders via port layer
+5. **Display**: Automatic byte swapping and sync for panel type (SPI/DSI)
 
-## Known limitations (WIP)
-- Color mapping still needs verification (RGB/BGR ordering)
-- Text rendering may appear less crisp with software backend
-- No input handling yet; the app runs continuously
+**Key Files:**
+- `main/Kconfig.projbuild` - Defines board selection options
+- `main/board_init.c` - Board-specific ESP-BSP initialization
+- `main/hello.c` - Raylib application (queries dimensions dynamically)
+- `sdkconfig.defaults.<board>` - Sets `CONFIG_BOARD_<NAME>=y`
+
+**Notes:**
+- PSRAM is required and used for framebuffers
+- Board selection via Kconfig enables conditional BSP loading
+- Multiple boards with same target (e.g., S3) can use different BSPs
+- Display dimensions are queried at runtime, not hardcoded
+
+## Expected Behavior
+
+1. **Color Test Sequence**: Full-screen RED, GREEN, BLUE (1 second each)
+2. **Animation Loop**: 
+   - Alternating background (sky-blue / light-gray every 60 frames)
+   - Moving red rectangle across screen
+   - Centered text "Hello ESP32!"
+   - Corner markers (yellow, orange, purple, pink)
+
+## Performance
+
+- **ESP32-S3-BOX-3** (320x240): ~15-20 FPS
+- **M5Stack Core S3** (320x240): ~15-20 FPS
+- **ESP32-P4** (1024x600): ~5-10 FPS (larger framebuffer)
+
+## Known Limitations
+
+- Touch input API ready but not connected to raylib
+- Audio module not implemented
+- 3D models disabled (requires filesystem)
+- Large displays (1024x600) render slowly at full resolution
+- Text rendering may appear aliased with software backend
 
 ## Directory Structure
-- `main/hello.c` - Example application
-- `sdkconfig.defaults` - Base configuration for all boards
-- `sdkconfig.defaults.<board>` - Board-specific configurations
-- `wokwi/<board>/` - Wokwi simulation files per board
+
+```
+hello/
+├── CMakeLists.txt              # Adds esp_ray_port to EXTRA_COMPONENT_DIRS
+├── main/
+│   ├── hello.c                # Application (queries dimensions dynamically)
+│   ├── board_init.c           # Board-specific BSP initialization
+│   ├── board_init.h
+│   ├── Kconfig.projbuild      # Board selection menu
+│   ├── CMakeLists.txt         # Requires esp_ray_port
+│   └── idf_component.yml      # Conditional BSP dependencies
+├── sdkconfig.defaults         # Base config for all boards
+├── sdkconfig.defaults.*       # Board-specific configs
+├── support/                   # ESPBrew generated scripts
+│   ├── build-esp-box-3.sh
+│   ├── flash-esp-box-3.sh
+│   └── ...
+└── wokwi/                     # Wokwi simulation configs
+    ├── esp-box-3/
+    ├── m5stack_core_s3/
+    └── esp32_p4_function_ev_board/
+```
 
 ## Wokwi Simulation
 
@@ -106,5 +161,34 @@ wokwi-cli --diagram-file wokwi/esp-box-3/diagram.json --screenshot-part esp --sc
 ```
 
 ## Troubleshooting
-- If you see SPI queue errors or partial updates, ensure chunked transfers are used and PSRAM is enabled.
-- If stack overflows occur, ensure the app runs in a dedicated task with a larger stack (example uses 128KB).
+
+### "No board selected" Error
+- Ensure `CONFIG_BOARD_*` is set in your sdkconfig
+- Check `build/sdkconfig` to verify board config is present
+- Rebuild from clean: `rm -rf build && idf.py build`
+
+### Display Not Working
+- **SPI panels (S3)**: Check `swap_rgb_bytes = true` in board_init
+- **DSI panels (P4)**: Check `swap_rgb_bytes = false` in board_init
+- Verify BSP initialization succeeds (check logs)
+- Ensure proper DSI bus config for P4 (see board_init.c)
+
+### Colors Wrong
+- Toggle `swap_rgb_bytes` in `board_init.c` for your board
+- SPI LCDs typically need byte swapping, DSI panels don't
+
+### Stack Overflow
+- Ensure PSRAM is enabled: `CONFIG_SPIRAM=y`
+- Framebuffers allocated with `buff_psram = true`
+- Main task stack: `CONFIG_ESP_MAIN_TASK_STACK_SIZE=65536`
+- Raylib task uses 128KB stack (see hello.c)
+
+### Build Errors
+- Clean build: `rm -rf build managed_components`
+- Reconfigure: `idf.py reconfigure`
+- Check ESP-IDF version: 5.5+ required
+
+### P4 Crashes on Init
+- Ensure DSI bus config is provided (not NULL)
+- Check backlight init: `bsp_display_brightness_init()` first
+- Verify panel handle is valid after `bsp_display_new()`
