@@ -37,5 +37,6 @@ target_compile_options(${COMPONENT_TARGET} PRIVATE
     -Wno-unused-variable
     -Wno-unused-function
     -Wno-macro-redefined                         # SW_MALLOC/SW_FREE redefined for PSRAM
+    -Wno-stringop-truncation                     # Raylib rtext.c TextReplaceBetween
 )
 

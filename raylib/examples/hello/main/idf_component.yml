@@ -3,31 +3,31 @@ dependencies:
   georgik/raylib:
     version: "*"
     override_path: "../../../../raylib"
-    # git: https://github.com/georgik/esp-idf-component-raylib.git
 
   georgik/raylib_bsp:
     version: "*"
     override_path: "../../../../raylib_bsp"
-    # git: https://github.com/georgik/esp-idf-component-raylib.git (subfolder: raylib_bsp)
 
   ## Required IDF version
   idf:
     version: ">=5.1.0"
 
-  # BSP - Board Support Package
-  # Multiple BSPs for the same target (e.g., ESP-BOX-3 and M5Stack Core S3 both use ESP32-S3)
-  # will be loaded based on target. The Kconfig setting (CONFIG_RAYLIB_BOARD_*) determines
-  # which BSP is actually used at runtime.
+  # Board-specific BSPs - conditional based on Kconfig selection
   
-  # Board support via raylib_bsp abstraction layer
-  # BSPs must also be listed here because override_path doesn't fetch transitive dependencies
-  # NOTE: Only ONE BSP can be active at a time to avoid Kconfig conflicts
-  
-  # ESP32-S3-BOX-3 (comment out for other boards)
+  # ESP32-S3-BOX-3 BSP (noglib version - without LVGL)
   espressif/esp-box-3_noglib:
     version: "*"
-  
-  # M5Stack Core S3 (uncomment and comment out ESP-BOX-3 above)
-  # espressif/m5stack_core_s3_noglib:
-  #   version: "*"
+    matches:
+      - if: "$CONFIG{RAYLIB_BOARD_ESP_BOX_3} == True"
 
+  # M5Stack Core S3 BSP (noglib version - without LVGL)
+  espressif/m5stack_core_s3_noglib:
+    version: "*"
+    matches:
+      - if: "$CONFIG{RAYLIB_BOARD_M5STACK_CORE_S3} == True"
+
+  # ESP32-P4 Function EV Board BSP (noglib version - without LVGL)
+  espressif/esp32_p4_function_ev_board_noglib:
+    version: "*"
+    matches:
+      - if: "$CONFIG{RAYLIB_BOARD_ESP32_P4_FUNCTION_EV} == True"

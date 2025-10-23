@@ -391,13 +391,8 @@ void SwapScreenBuffer(void)
         ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, 0, y, screen_width, y + chunk_height, chunk_pixels));
     }
     
-#ifdef CONFIG_IDF_TARGET_ESP32P4
-    // ESP32-P4 uses callbacks - wait for completion
-    if (lcd_semaphore) {
-        xSemaphoreTake(lcd_semaphore, portMAX_DELAY);
-    }
-#endif
-    // Note: Non-P4 boards don't need to wait - SPI driver queues transfers
+    // Note: ESP32-P4 DSI panels don't require waiting - data is transferred immediately
+    // Non-P4 SPI boards don't need to wait either - SPI driver queues transfers
 }
 
 //----------------------------------------------------------------------------------
@@ -464,13 +459,8 @@ void PollInputEvents(void)
 //----------------------------------------------------------------------------------
 
 
-#ifdef CONFIG_IDF_TARGET_ESP32P4
-static bool lcd_event_callback(esp_lcd_panel_handle_t panel_io, esp_lcd_dpi_panel_event_data_t *edata, void *user_ctx)
-{
-    xSemaphoreGive(lcd_semaphore);
-    return false;
-}
-#else
+// LCD event callback for SPI panels (not needed for DSI panels like ESP32-P4)
+#ifndef CONFIG_IDF_TARGET_ESP32P4
 static bool lcd_event_callback(esp_lcd_panel_io_handle_t io, esp_lcd_panel_io_event_data_t *event_data, void *user_ctx)
 {
     xSemaphoreGive(lcd_semaphore);
@@ -500,20 +490,7 @@ bool CreateWindowFramebuffer(int width, int height)
         framebuffer[i] = 0x07E0;  // RGB565 green
     }
 
-#ifdef CONFIG_IDF_TARGET_ESP32P4
-    // Only ESP32-P4 needs semaphore for DPI panel callbacks
-    lcd_semaphore = xSemaphoreCreateBinary();
-    if (!lcd_semaphore) {
-        heap_caps_free(framebuffer);
-        TRACELOG(LOG_ERROR, "PLATFORM: Failed to create semaphore");
-        return false;
-    }
-    
-    const esp_lcd_dpi_panel_event_callbacks_t callback = {
-        .on_color_trans_done = lcd_event_callback,
-    };
-    esp_lcd_dpi_panel_register_event_callbacks(panel_handle, &callback, NULL);
-#endif
+// ESP32-P4 uses DSI interface which doesn't require callbacks
     // Non-P4 boards don't need semaphore - SPI driver handles queuing
 
     TRACELOG(LOG_INFO, "PLATFORM: Framebuffer allocated: %dx%d (RGB565)", width, height);
