@@ -51,11 +51,18 @@
 #include "utils.h"
 #include <string.h>
 
+// ESP-IDF and FreeRTOS headers
+#include "esp_heap_caps.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
 //----------------------------------------------------------------------------------
 typedef struct {
-    // TODO: Define the platform specific variables required
+    // Placeholder member to avoid empty struct (which is invalid in C99)
+    int placeholder;
+    // TODO: Define additional platform specific variables if required
 
     // Display data
     // EGLDisplay device;                  // Native display device (physical screen connection)
@@ -336,8 +343,7 @@ void DisableCursor(void)
 }
 
 
-#include "bsp/esp-bsp.h"
-#include "bsp/display.h"
+#include "raylib_bsp.h"
 #include "esp_lcd_panel_ops.h"
 
 static SemaphoreHandle_t lcd_semaphore = NULL;
@@ -517,25 +523,20 @@ bool CreateWindowFramebuffer(int width, int height)
 // Initialize platform: graphics, inputs and more
 int InitPlatform(void)
 {
-    #ifdef CONFIG_IDF_TARGET_ESP32P4
-        ESP_ERROR_CHECK(bsp_display_new(NULL, &panel_handle, &panel_io_handle));
-    #else
-        // Set max_transfer_sz to chunk size (following ESP-BSP pattern)
-        const bsp_display_config_t bsp_disp_cfg = {
-            .max_transfer_sz = (BSP_LCD_H_RES * max_chunk_height) * sizeof(uint16_t),
-        };
-        ESP_ERROR_CHECK(bsp_display_new(&bsp_disp_cfg, &panel_handle, &panel_io_handle));
-    #endif
-
-        ESP_ERROR_CHECK(bsp_display_backlight_on());
+    // Use raylib_bsp abstraction layer
+    ESP_ERROR_CHECK(raylib_bsp_display_init(&panel_handle, &panel_io_handle));
+    ESP_ERROR_CHECK(raylib_bsp_backlight_on());
 
     #ifndef CONFIG_IDF_TARGET_ESP32P4
         esp_lcd_panel_disp_on_off(panel_handle, true);
     #endif
 
-    // BSP_LCD_H_RES = width (320), BSP_LCD_V_RES = height (240)
-    CreateWindowFramebuffer(BSP_LCD_H_RES, BSP_LCD_V_RES);
-    TRACELOG(LOG_INFO, "PLATFORM: ESP-IDF: Initialized successfully");
+    // Get display dimensions from BSP abstraction
+    int width = raylib_bsp_get_display_width();
+    int height = raylib_bsp_get_display_height();
+    
+    CreateWindowFramebuffer(width, height);
+    TRACELOG(LOG_INFO, "PLATFORM: ESP-IDF (%s): Initialized successfully", raylib_bsp_get_board_name());
 
     return 0;
 }

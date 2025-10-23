@@ -1,0 +1,60 @@
+menu "Raylib BSP Configuration"
+
+    choice RAYLIB_BSP_BOARD
+        prompt "Select Target Board"
+        default RAYLIB_BSP_ESP_BOX_3
+        help
+            Select the target board for Raylib.
+            This determines which Board Support Package (BSP) will be used.
+
+        config RAYLIB_BSP_ESP_BOX_3
+            bool "ESP32-S3-BOX-3"
+            depends on IDF_TARGET_ESP32S3
+            help
+                ESP32-S3-BOX-3 development board
+                - Display: 320x240 ILI9341 (SPI)
+                - PSRAM: Octal PSRAM
+                - Touch: FT5x06
+
+        config RAYLIB_BSP_M5STACK_CORE_S3
+            bool "M5Stack Core S3"
+            depends on IDF_TARGET_ESP32S3
+            help
+                M5Stack Core S3 development board
+                - Display: 320x240 ILI9341 (SPI)
+                - PSRAM: Quad PSRAM
+                - Touch: FT5x06
+
+        config RAYLIB_BSP_ESP32_P4_FUNCTION_EV
+            bool "ESP32-P4 Function EV Board"
+            depends on IDF_TARGET_ESP32P4
+            help
+                ESP32-P4 Function EV Board
+                - Display: 1280x800 MIPI-DSI
+                - PSRAM: 32MB
+                - Touch: GT1151
+
+        config RAYLIB_BSP_ESP32_C3_LCDKIT
+            bool "ESP32-C3 LCDKit"
+            depends on IDF_TARGET_ESP32C3
+            help
+                ESP32-C3 LCDKit development board
+
+        config RAYLIB_BSP_ESP32_C6_DEVKIT
+            bool "ESP32-C6 DevKit"
+            depends on IDF_TARGET_ESP32C6
+            help
+                ESP32-C6 DevKit with generic BSP
+
+    endchoice
+
+    config RAYLIB_BSP_BOARD_NAME
+        string
+        default "esp-box-3" if RAYLIB_BSP_ESP_BOX_3
+        default "m5stack_core_s3" if RAYLIB_BSP_M5STACK_CORE_S3
+        default "esp32_p4_function_ev" if RAYLIB_BSP_ESP32_P4_FUNCTION_EV
+        default "esp32_c3_lcdkit" if RAYLIB_BSP_ESP32_C3_LCDKIT
+        default "esp32_c6_devkit" if RAYLIB_BSP_ESP32_C6_DEVKIT
+        default "unknown"
+
+endmenu

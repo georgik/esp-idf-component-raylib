@@ -8,7 +8,13 @@ This component enables running raylib on ESP32 microcontrollers using the **CPU-
 
 ```bash
 cd raylib/examples/hello
-idf.py @boards/esp-box-3.cfg build flash monitor
+
+# Method 1: Explicit SDKCONFIG_DEFAULTS
+idf.py set-target esp32s3
+idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp-box-3" reconfigure build flash monitor
+
+# Method 2: Using ESPBrew (recommended for multi-board development)
+espbrew --cli-only .
 ```
 
 ## 📦 Repository Structure
