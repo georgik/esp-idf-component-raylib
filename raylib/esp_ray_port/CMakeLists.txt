@@ -1,0 +1,11 @@
+idf_component_register(
+    SRCS
+        "src/esp_ray_port.c"
+    INCLUDE_DIRS
+        "include"
+    REQUIRES
+        esp_lcd
+    PRIV_REQUIRES
+        freertos
+        esp_timer
+)
