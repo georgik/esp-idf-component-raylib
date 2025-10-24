@@ -1,9 +1,9 @@
 /**
- * @file esp_ray_port.c
+ * @file esp_raylib_port.c
  * @brief ESP Raylib Port Layer Implementation
  */
 
-#include "esp_ray_port.h"
+#include "esp_raylib_port.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"

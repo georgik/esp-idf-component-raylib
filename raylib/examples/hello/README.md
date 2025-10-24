@@ -4,7 +4,7 @@ This example demonstrates running raylib with the software renderer on ESP-IDF u
 
 ## Features
 
-- **Port Layer Architecture**: Board-agnostic display abstraction (`esp_ray_port`)
+- **Port Layer Architecture**: Board-agnostic display abstraction (`esp_raylib_port`)
 - **Software Renderer**: No OpenGL/GPU required (CPU-based rendering)
 - **Dynamic Dimensions**: Automatically queries display size from port
 - **Multi-Board Support**: Easy to add new boards via `board_init.c`
@@ -71,7 +71,7 @@ Install ESPBrew: https://github.com/georgik/espbrew
 
 1. **Board Selection**: Defined in `sdkconfig.defaults.<board>` via `CONFIG_BOARD_*`
 2. **Board Init**: `main/board_init.c` creates panel using ESP-BSP for selected board
-3. **Port Layer**: `esp_ray_port` provides board-agnostic display API
+3. **Port Layer**: `esp_raylib_port` provides board-agnostic display API
 4. **Raylib**: Queries dimensions and renders via port layer
 5. **Display**: Automatic byte swapping and sync for panel type (SPI/DSI)
 
@@ -114,13 +114,13 @@ Install ESPBrew: https://github.com/georgik/espbrew
 
 ```
 hello/
-├── CMakeLists.txt              # Adds esp_ray_port to EXTRA_COMPONENT_DIRS
+├── CMakeLists.txt              # Adds esp_raylib_port to EXTRA_COMPONENT_DIRS
 ├── main/
 │   ├── hello.c                # Application (queries dimensions dynamically)
 │   ├── board_init.c           # Board-specific BSP initialization
 │   ├── board_init.h
 │   ├── Kconfig.projbuild      # Board selection menu
-│   ├── CMakeLists.txt         # Requires esp_ray_port
+│   ├── CMakeLists.txt         # Requires esp_raylib_port
 │   └── idf_component.yml      # Conditional BSP dependencies
 ├── sdkconfig.defaults         # Base config for all boards
 ├── sdkconfig.defaults.*       # Board-specific configs

@@ -43,7 +43,7 @@ jobs:
             --timeout 12000 \
             --timeout-exit-code 0 \
             --screenshot-part "esp" \
-            --screenshot-time 5000 \
+            --screenshot-time 7000 \
             --elf "build.${{ matrix.board }}/${{ github.event.inputs.prefix || 'hello' }}-${{ matrix.board }}.bin" \
             --fail-text 'Rebooting...' \
             --screenshot-file "screenshot-${{ matrix.board }}.png" \

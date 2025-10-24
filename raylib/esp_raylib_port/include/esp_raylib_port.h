@@ -1,5 +1,5 @@
 /**
- * @file esp_ray_port.h
+ * @file esp_raylib_port.h
  * @brief ESP Raylib Port Layer - Board-agnostic display/touch abstraction
  * 
  * This component provides a stable port layer API between raylib and ESP-IDF

@@ -1,6 +1,6 @@
 idf_component_register(
     SRCS
-        "src/esp_ray_port.c"
+        "src/esp_raylib_port.c"
     INCLUDE_DIRS
         "include"
     REQUIRES

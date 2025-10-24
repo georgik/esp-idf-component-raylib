@@ -13,7 +13,7 @@ Application (hello.c)
     ↓
 board_init.c (creates panel via ESP-BSP)
     ↓
-esp_ray_port (board-agnostic display API)
+esp_raylib_port (board-agnostic display API)
     ↓
 raylib (rcore_esp_idf.c platform backend)
     ↓
@@ -72,7 +72,8 @@ See the [hello example](examples/hello/README.md) for a complete working applica
 
 ```bash
 cd examples/hello
-idf.py @boards/esp-box-3.cfg build flash monitor
+idf.py set-target esp32s3
+idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp-box-3" reconfigure build flash monitor
 ```
 
 ## Component Structure
@@ -81,9 +82,9 @@ idf.py @boards/esp-box-3.cfg build flash monitor
 raylib/
 ├── CMakeLists.txt              # ESP-IDF component build configuration
 ├── idf_component.yml           # Component metadata
-├── esp_ray_port/              # Port layer (NEW)
-│   ├── include/esp_ray_port.h  # Port API
-│   ├── src/esp_ray_port.c      # Implementation
+├── esp_raylib_port/              # Port layer
+│   ├── include/esp_raylib_port.h  # Port API
+│   ├── src/esp_raylib_port.c      # Implementation
 │   ├── CMakeLists.txt
 │   └── idf_component.yml
 ├── include/                    # Wrapper headers (stubs, overrides)
@@ -112,7 +113,7 @@ The component is configured via CMake definitions in `CMakeLists.txt`:
 - `SW_MALLOC` / `SW_FREE` - Allocate from PSRAM
 - Disabled modules: raudio, rmodels, compression, automation
 
-## Port Layer API (`esp_ray_port`)
+## Port Layer API (`esp_raylib_port`)
 
 The port layer provides a stable, board-agnostic API:
 

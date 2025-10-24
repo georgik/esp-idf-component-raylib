@@ -16,7 +16,7 @@ idf_component_register(
         "raylib/src/external"
     PRIV_REQUIRES
         esp_lcd
-        esp_ray_port  # Port layer abstraction - board-agnostic display/touch API
+        esp_raylib_port  # Port layer abstraction - board-agnostic display/touch API
 )
 
 # Enable software renderer

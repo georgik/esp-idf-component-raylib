@@ -6,9 +6,9 @@ This component enables running raylib on ESP32 microcontrollers using the **CPU-
 
 ## 🏗️ Architecture: Port Layer
 
-This implementation uses a **board-agnostic port layer** (`esp_ray_port`) that separates display hardware management from the raylib rendering engine:
+This implementation uses a **board-agnostic port layer** (`esp_raylib_port`) that separates display hardware management from the raylib rendering engine:
 
-- **esp_ray_port**: Stable API for display initialization and framebuffer operations
+- **esp_raylib_port**: Stable API for display initialization and framebuffer operations
 - **Inversion of control**: Application creates display handles and passes them to the port
 - **Deterministic builds**: Board selection via Kconfig, no dynamic component injection
 - **Multi-board support**: Switch boards by changing `SDKCONFIG_DEFAULTS`
