@@ -22,9 +22,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'raylib/**'
+      - 'esp_raylib_port/**'
   pull_request:
     branches:
       - main
+    paths:
+      - 'raylib/**'
+      - 'esp_raylib_port/**'
 
 jobs:
   build:

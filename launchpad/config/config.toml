@@ -1,0 +1,30 @@
+esp_toml_version = 1.0
+
+# Base URL for firmware binaries
+firmware_images_url = "https://georgik.github.io/esp-idf-component-raylib/firmware/"
+
+# Applications available
+supported_apps = ["Raylib-Hello"]
+
+# Documentation
+config_readme_url = "https://raw.githubusercontent.com/georgik/esp-idf-component-raylib/main/raylib/examples/hello/README.md"
+
+[Raylib-Hello]
+# Supported chipsets
+chipsets = ["ESP32-S3"]
+
+# Development kits
+developKits.esp32-s3 = ["esp32-s3-box-3"]
+
+# Firmware images (merged binaries)
+image.esp32-s3-box-3 = "raylib-hello-latest-esp-box-3.bin"
+
+# Description
+description = "Raylib Hello Example - Graphics demo showing Raylib on ESP32 with software rendering. Features animated shapes, text rendering, and color tests on 320x240 (S3) and 1024x600 (P4) displays."
+
+# README
+readme.text = "https://raw.githubusercontent.com/georgik/esp-idf-component-raylib/main/raylib/examples/hello/README.md"
+
+# Console settings
+console_baudrate = 115200
+

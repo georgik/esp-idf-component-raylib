@@ -40,14 +40,14 @@ jobs:
           echo "Latest release: $LATEST_RELEASE"
           
           # Download firmware binaries from latest release
-          curl -L -o temp-launchpad/firmware/raylib-hello-latest-m5stack_core_s3.bin \
-            "https://github.com/georgik/esp-idf-component-raylib/releases/latest/download/raylib-hello-${LATEST_RELEASE}-m5stack_core_s3.bin" || echo "M5Stack Core S3 binary not found"
+          #curl -L -o temp-launchpad/firmware/raylib-hello-latest-m5stack_core_s3.bin \
+          #  "https://github.com/georgik/esp-idf-component-raylib/releases/latest/download/raylib-hello-${LATEST_RELEASE}-m5stack_core_s3.bin" || echo "M5Stack Core S3 binary not found"
           
           curl -L -o temp-launchpad/firmware/raylib-hello-latest-esp-box-3.bin \
             "https://github.com/georgik/esp-idf-component-raylib/releases/latest/download/raylib-hello-${LATEST_RELEASE}-esp-box-3.bin" || echo "ESP-BOX-3 binary not found"
           
-          curl -L -o temp-launchpad/firmware/raylib-hello-latest-esp32_p4_function_ev_board.bin \
-            "https://github.com/georgik/esp-idf-component-raylib/releases/latest/download/raylib-hello-${LATEST_RELEASE}-esp32_p4_function_ev_board.bin" || echo "ESP32-P4 binary not found"
+          #curl -L -o temp-launchpad/firmware/raylib-hello-latest-esp32_p4_function_ev_board.bin \
+          #  "https://github.com/georgik/esp-idf-component-raylib/releases/latest/download/raylib-hello-${LATEST_RELEASE}-esp32_p4_function_ev_board.bin" || echo "ESP32-P4 binary not found"
 
       - name: Setup custom configuration
         run: |
