@@ -1,0 +1,10 @@
+## IDF Component Manager Manifest File
+description: ESP Raylib Port Layer - Board-agnostic display abstraction for Raylib
+license: Zlib
+url: https://github.com/georgik/esp-idf-component-raylib
+repository: https://github.com/georgik/esp-idf-component-raylib
+version: 1.0.0
+
+dependencies:
+  idf:
+    version: ">=5.5.0"

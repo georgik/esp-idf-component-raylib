@@ -1,4 +1,6 @@
 #include "raylib.h"
+#include "board_init.h"
+#include "esp_raylib_port.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -8,11 +10,16 @@
 
 void raylib_task(void *pvParameter)
 {
-    // Initialize Raylib with screen dimensions (ESP-Box-3: 320x240)
-    const int screenWidth = 320;
-    const int screenHeight = 240;
+    // Query actual display dimensions from port
+    uint16_t screenWidth = 320;  // Default fallback
+    uint16_t screenHeight = 240;
+    
+    esp_err_t ret = ray_port_get_dimensions(&screenWidth, &screenHeight);
+    if (ret != ESP_OK) {
+        ESP_LOGW(TAG, "Failed to get display dimensions, using defaults");
+    }
 
-    ESP_LOGI(TAG, "Initializing Raylib...");
+    ESP_LOGI(TAG, "Initializing Raylib with display dimensions: %dx%d...", screenWidth, screenHeight);
     InitWindow(screenWidth, screenHeight, "Raylib + ESP-IDF Demo");
 
     ESP_LOGI(TAG, "Raylib Initialized. Entering main loop...");
@@ -87,6 +94,15 @@ void raylib_task(void *pvParameter)
 
 void app_main(void)
 {
+    ESP_LOGI(TAG, "Initializing board display...");
+    
+    // Initialize display hardware and port layer
+    esp_err_t ret = board_init_display();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize display: %d", ret);
+        return;
+    }
+    
     ESP_LOGI(TAG, "Creating raylib task with %dKB stack...", RAYLIB_TASK_STACK_SIZE / 1024);
     
     // Create dedicated task for raylib with large stack

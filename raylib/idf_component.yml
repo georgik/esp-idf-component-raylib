@@ -11,6 +11,8 @@ files:
     - "raylib/.git*"           # Exclude git metadata
 
 dependencies:
+  georgik/esp_raylib_port:
+    version: "^1.0.0"
   espressif/esp_lcd_touch_tt21100: "*"
   ## Required IDF version
   idf:

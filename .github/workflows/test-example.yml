@@ -40,10 +40,10 @@ jobs:
         run: |
           curl -L https://wokwi.com/ci/install.sh | sh
           /home/runner/.wokwi/bin/wokwi-cli \
-            --timeout 12000 \
+            --timeout 15000 \
             --timeout-exit-code 0 \
             --screenshot-part "esp" \
-            --screenshot-time 5000 \
+            --screenshot-time 12000 \
             --elf "build.${{ matrix.board }}/${{ github.event.inputs.prefix || 'hello' }}-${{ matrix.board }}.bin" \
             --fail-text 'Rebooting...' \
             --screenshot-file "screenshot-${{ matrix.board }}.png" \
