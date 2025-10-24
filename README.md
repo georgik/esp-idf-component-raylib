@@ -13,7 +13,35 @@ This implementation uses a **board-agnostic port layer** (`esp_raylib_port`) tha
 - **Deterministic builds**: Board selection via Kconfig, no dynamic component injection
 - **Multi-board support**: Switch boards by changing `SDKCONFIG_DEFAULTS`
 
-## 🚀 Quick Start
+## 🎮 Try it Online
+
+Test Raylib on ESP32 directly in your browser using Wokwi simulation (no hardware or build required):
+
+
+[![ESP32-S3-BOX-3 Green Screen](docs/img/raylib-hello-esp-box-3-green.webp)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Flatest%2Fdownload%2Fraylib-hello-latest-esp-box-3.bin)
+
+
+[![ESP32-S3-BOX-3 Hello World](docs/img/raylib-hello-esp-box-3-hello.webp)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Flatest%2Fdownload%2Fraylib-hello-latest-esp-box-3.bin)
+
+**[▶️ Run ESP32-S3-BOX-3 (320x240)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Flatest%2Fdownload%2Fraylib-hello-latest-esp-box-3.bin)**
+
+
+## 🔌 Flash Pre-built Binaries
+
+No build required! Flash pre-built binaries directly from your browser using ESP Launchpad:
+
+**[🚀 Open ESP Launchpad](https://georgik.github.io/esp-idf-component-raylib/)**
+
+**Supported boards:**
+- ESP32-S3-BOX-3
+- M5Stack Core S3  
+- ESP32-P4 Function EV Board
+
+**Requirements:**
+- Chrome or Edge browser (WebSerial support required)
+- USB cable connected to your board
+
+## 🚀 Build from Source
 
 ```bash
 cd raylib/examples/hello
@@ -30,11 +58,11 @@ espbrew --cli-only .
 
 ```
 esp-idf-component-raylib/
-├── README.md                   # This file
-├── esp_raylib_port/            # Port layer component (georgik/esp_raylib_port)
+├── README.md                  # This file
+├── esp_raylib_port/           # Port layer component (georgik/esp_raylib_port)
 │   ├── idf_component.yml      # Published separately
 │   └── src/                   # Board-agnostic display API
-└── raylib/                     # Main component (georgik/raylib)
+└── raylib/                    # Main component (georgik/raylib)
     ├── README.md              # Component documentation
     ├── CMakeLists.txt         # Component build configuration
     ├── idf_component.yml      # Component metadata
@@ -91,7 +119,6 @@ With raylib on ESP32, you can create:
 
 ## ⚠️ Current Limitations
 
-- Performance: ~15-20 FPS on ESP32-S3@240MHz, varies by resolution
 - Audio module not yet implemented
 - 3D models disabled (requires filesystem)
 - Touch input framework ready but not yet connected
@@ -124,7 +151,3 @@ This wrapper component: **zlib/libpng** (matching raylib license)
 - **[Component Documentation](raylib/README.md)** - Architecture, configuration, and API
 - **[Hello Example](raylib/examples/hello/README.md)** - Complete working example
 - **[Implementation Guide](PLAN_A_IMPLEMENTATION.md)** - Detailed user guide and API reference
-
----
-
-**Status**: ✅ Production Ready - Fully implemented and tested on multiple boards.

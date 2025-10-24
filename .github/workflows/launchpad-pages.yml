@@ -1,0 +1,90 @@
+name: Deploy ESP Launchpad to Pages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "launchpad-pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Clone ESP Launchpad
+        run: |
+          git clone https://github.com/espressif/esp-launchpad.git temp-launchpad
+          
+      - name: Download latest release binaries
+        run: |
+          # Create firmware directory
+          mkdir -p temp-launchpad/firmware
+          
+          # Get the latest release and download firmware binaries
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/georgik/esp-idf-component-raylib/releases/latest | jq -r '.tag_name')
+          echo "Latest release: $LATEST_RELEASE"
+          
+          # Download firmware binaries from latest release
+          curl -L -o temp-launchpad/firmware/raylib-hello-latest-m5stack_core_s3.bin \
+            "https://github.com/georgik/esp-idf-component-raylib/releases/latest/download/raylib-hello-${LATEST_RELEASE}-m5stack_core_s3.bin" || echo "M5Stack Core S3 binary not found"
+          
+          curl -L -o temp-launchpad/firmware/raylib-hello-latest-esp-box-3.bin \
+            "https://github.com/georgik/esp-idf-component-raylib/releases/latest/download/raylib-hello-${LATEST_RELEASE}-esp-box-3.bin" || echo "ESP-BOX-3 binary not found"
+          
+          curl -L -o temp-launchpad/firmware/raylib-hello-latest-esp32_p4_function_ev_board.bin \
+            "https://github.com/georgik/esp-idf-component-raylib/releases/latest/download/raylib-hello-${LATEST_RELEASE}-esp32_p4_function_ev_board.bin" || echo "ESP32-P4 binary not found"
+
+      - name: Setup custom configuration
+        run: |
+          # Copy our configuration over the default one
+          cp launchpad/config/config.toml temp-launchpad/config/config.toml
+          
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          
+      - name: Install dependencies
+        run: |
+          cd temp-launchpad
+          npm install
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'temp-launchpad'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        
+      - name: Deployment success notification
+        if: success()
+        run: |
+          echo "✅ ESP Launchpad successfully deployed!"
+          echo "🔗 Access at: ${{ steps.deployment.outputs.page_url }}"
+          echo "📱 Users can now flash pre-built binaries from their browser"
+          
+      - name: Deployment failure notification
+        if: failure()
+        run: |
+          echo "❌ Failed to deploy ESP Launchpad"
+          echo "Please check the logs above for details"

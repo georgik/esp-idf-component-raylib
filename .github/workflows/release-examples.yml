@@ -1,0 +1,127 @@
+name: Build and Release Raylib Example
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      create_release:
+        description: 'Create GitHub Release'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        board: [esp-box-3, m5stack_core_s3, esp32_p4_function_ev_board]
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Set Target for ESP-IDF
+        run: |
+          echo "TARGET=$(case ${{ matrix.board }} in
+            esp-box-3) echo 'esp32s3';;
+            m5stack_core_s3) echo 'esp32s3';;
+            esp32_p4_function_ev_board) echo 'esp32p4';;
+            *) echo 'Unknown target'; exit 1;;
+          esac)" >> $GITHUB_ENV
+
+      - name: esp-idf build and merge binaries
+        uses: espressif/esp-idf-ci-action@v1.1.0
+        with:
+          esp_idf_version: latest
+          target: ${{ env.TARGET }}
+          path: 'raylib/examples/hello'
+          command: |
+            idf.py set-target ${{ env.TARGET }} &&
+            idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.${{ matrix.board }}" reconfigure &&
+            idf.py build &&
+            cd build &&
+            # Create merged binary for ESP Launchpad
+            esptool.py --chip ${{ env.TARGET }} merge_bin -o ../raylib-hello-${{ github.event.inputs.version }}-${{ matrix.board }}.bin "@flash_args"
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: raylib-hello-${{ github.event.inputs.version }}-${{ matrix.board }}
+          path: |
+            raylib/examples/hello/raylib-hello-${{ github.event.inputs.version }}-${{ matrix.board }}.bin
+
+  release:
+    needs: build
+    if: github.event.inputs.create_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          find artifacts -name "*.bin" -exec cp {} release/ \;
+          ls -lh release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Release ${{ github.event.inputs.version }}
+          draft: false
+          prerelease: false
+          body: |
+            # Raylib Hello Example - Release ${{ github.event.inputs.version }}
+            
+            Pre-built binaries for ESP32 boards with Raylib graphics library.
+            
+            ## Supported Boards
+            - ESP32-S3-BOX-3 (320x240, ILI9341, SPI)
+            - M5Stack Core S3 (320x240, ILI9342C, SPI)
+            - ESP32-P4 Function EV Board (1024x600, EK79007, MIPI-DSI)
+            
+            ## Flash Instructions
+            
+            ### Option 1: ESP Launchpad (Browser-based)
+            Visit [ESP Launchpad](https://georgik.github.io/esp-idf-component-raylib/) to flash directly from your browser.
+            
+            ### Option 2: esptool.py
+            ```bash
+            esptool.py --chip <TARGET> write_flash 0x0 raylib-hello-${{ github.event.inputs.version }}-<board>.bin
+            ```
+            
+            ## Try it Online
+            Experience the demo in Wokwi simulator (no hardware required):
+            - [ESP32-S3-BOX-3 Simulation](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2F${{ github.event.inputs.version }}%2Fraylib-hello-${{ github.event.inputs.version }}-esp-box-3.bin)
+            - [M5Stack Core S3 Simulation](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fm5stack_core_s3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2F${{ github.event.inputs.version }}%2Fraylib-hello-${{ github.event.inputs.version }}-m5stack_core_s3.bin)
+            - [ESP32-P4 Simulation](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp32_p4_function_ev_board%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2F${{ github.event.inputs.version }}%2Fraylib-hello-${{ github.event.inputs.version }}-esp32_p4_function_ev_board.bin)
+          files: |
+            release/*.bin
+
+      - name: Upload success notification
+        if: success()
+        run: |
+          echo "✅ Successfully created release ${{ github.event.inputs.version }}!"
+          echo "🔗 View at: https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.version }}"
+          echo "🚀 Flash via ESP Launchpad: https://georgik.github.io/esp-idf-component-raylib/"
+
+      - name: Upload failure notification
+        if: failure()
+        run: |
+          echo "❌ Failed to create release ${{ github.event.inputs.version }}"
+          echo "Please check the logs above for details"
