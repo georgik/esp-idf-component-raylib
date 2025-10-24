@@ -55,6 +55,8 @@ jobs:
         with:
           name: ${{ github.event.inputs.prefix || 'hello' }}-${{ matrix.board }}.bin
           path: raylib/examples/hello/build.${{ matrix.board }}/${{ github.event.inputs.prefix || 'hello' }}-${{ matrix.board }}.bin
+  # TODO: FIX
+  # esptool --chip esp32s3 merge-bin -o esp-box-3-merged.bin --flash_mode dio --flash-freq 80m --flash-size 8MB @flash_app_args
 
   release:
     needs: build
