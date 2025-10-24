@@ -29,7 +29,7 @@ Test Raylib on ESP32 directly in your browser using Wokwi simulation (no hardwar
 
 No build required! Flash pre-built binaries directly from your browser using ESP Launchpad:
 
-[![Try it with ESP Launchpad](https://georgik.github.io/esp-idf-component-raylib/?flashConfigURL=https://georgik.github.io/esp-idf-component-raylib/config/config.toml)
+[![Try it with ESP Launchpad](https://espressif.github.io/esp-launchpad/assets/try_with_launchpad.png)](https://georgik.github.io/esp-idf-component-raylib/?flashConfigURL=https://georgik.github.io/esp-idf-component-raylib/config/config.toml)
 
 **Supported boards:**
 - ESP32-S3-BOX-3
