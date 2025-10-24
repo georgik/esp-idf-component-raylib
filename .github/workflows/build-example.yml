@@ -70,8 +70,10 @@ jobs:
           path: '.'
           command: |
             cd raylib/examples/hello
-            idf.py @boards/${{ matrix.board }}.cfg build &&
-            cd build.${{ matrix.board }} &&
+            export SDKCONFIG_DEFAULTS="sdkconfig.defaults.${{ matrix.board }}"
+            idf.py -D SDKCONFIG="build.${{ matrix.board }}/sdkconfig" -B "build.${{ matrix.board }}" set-target ${{ env.TARGET }}
+            idf.py -D SDKCONFIG="build.${{ matrix.board }}/sdkconfig" -B "build.${{ matrix.board }}" build
+            cd build.${{ matrix.board }}
             esptool.py --chip ${{ env.TARGET }} merge_bin -o ${{ github.event.inputs.prefix || 'hello' }}-${{ matrix.board }}.bin "@flash_args"
 
       - name: Upload Build Artifacts
