@@ -2,7 +2,11 @@
 dependencies:
   georgik/raylib:
     version: "*"
-    override_path: "../../../../raylib"
+    override_path: "../../.."
+  
+  georgik/esp_raylib_port:
+    version: "*"
+    override_path: "../../../../esp_raylib_port"
 
   # Board-specific BSPs (noglib versions - without LVGL)
   espressif/esp-box-3_noglib:

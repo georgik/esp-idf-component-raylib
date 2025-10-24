@@ -31,7 +31,10 @@ espbrew --cli-only .
 ```
 esp-idf-component-raylib/
 ├── README.md                   # This file
-└── raylib/                     # ESP-IDF component
+├── esp_raylib_port/            # Port layer component (georgik/esp_raylib_port)
+│   ├── idf_component.yml      # Published separately
+│   └── src/                   # Board-agnostic display API
+└── raylib/                     # Main component (georgik/raylib)
     ├── README.md              # Component documentation
     ├── CMakeLists.txt         # Component build configuration
     ├── idf_component.yml      # Component metadata

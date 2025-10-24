@@ -114,14 +114,14 @@ Install ESPBrew: https://github.com/georgik/espbrew
 
 ```
 hello/
-├── CMakeLists.txt              # Adds esp_raylib_port to EXTRA_COMPONENT_DIRS
+├── CMakeLists.txt              # Standard ESP-IDF project
 ├── main/
 │   ├── hello.c                # Application (queries dimensions dynamically)
 │   ├── board_init.c           # Board-specific BSP initialization
 │   ├── board_init.h
 │   ├── Kconfig.projbuild      # Board selection menu
-│   ├── CMakeLists.txt         # Requires esp_raylib_port
-│   └── idf_component.yml      # Conditional BSP dependencies
+│   ├── CMakeLists.txt         # Requires georgik__raylib
+│   └── idf_component.yml      # Conditional BSP + component dependencies
 ├── sdkconfig.defaults         # Base config for all boards
 ├── sdkconfig.defaults.*       # Board-specific configs
 ├── support/                   # ESPBrew generated scripts

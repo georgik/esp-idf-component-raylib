@@ -5,5 +5,5 @@ idf_component_register(
     INCLUDE_DIRS "."
     PRIV_REQUIRES
         georgik__raylib
-        esp_raylib_port
+        # esp_raylib_port is pulled in via georgik__raylib dependency
 )

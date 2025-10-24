@@ -81,12 +81,7 @@ idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp-box-3" re
 ```
 raylib/
 ├── CMakeLists.txt              # ESP-IDF component build configuration
-├── idf_component.yml           # Component metadata
-├── esp_raylib_port/              # Port layer
-│   ├── include/esp_raylib_port.h  # Port API
-│   ├── src/esp_raylib_port.c      # Implementation
-│   ├── CMakeLists.txt
-│   └── idf_component.yml
+├── idf_component.yml           # Component metadata (depends on esp_raylib_port)
 ├── include/                    # Wrapper headers (stubs, overrides)
 │   ├── dirent.h               # Stub for missing POSIX functions
 │   └── rlsw_esp_idf.h         # Software renderer config (PSRAM, RGB format)

@@ -14,9 +14,10 @@ idf_component_register(
         "include"                # Our wrapper includes (stubs) - custom config.h here takes precedence
         "raylib/src"
         "raylib/src/external"
+    REQUIRES
+        esp_raylib_port  # Port layer abstraction - board-agnostic display/touch API
     PRIV_REQUIRES
         esp_lcd
-        esp_raylib_port  # Port layer abstraction - board-agnostic display/touch API
 )
 
 # Enable software renderer
