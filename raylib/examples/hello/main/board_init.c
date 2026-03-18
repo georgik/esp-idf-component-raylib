@@ -32,15 +32,15 @@ esp_err_t board_init_display(void)
     };
     
     bsp_display_new(&cfg, &panel_handle, &io_handle);
-    
+
     if (!panel_handle) {
         ESP_LOGE(TAG, "Failed to initialize BSP display");
         return ESP_FAIL;
     }
-    
+
     // Turn on backlight
     bsp_display_backlight_on();
-    
+
     // Initialize raylib port layer
     ray_port_cfg_t port_cfg = {
         .buff_psram = true,
@@ -79,24 +79,24 @@ esp_err_t board_init_display(void)
 esp_err_t board_init_display(void)
 {
     ESP_LOGI(TAG, "Initializing M5Stack Core S3 display via BSP...");
-    
+
     // Initialize BSP display (noglib version)
     esp_lcd_panel_handle_t panel_handle = NULL;
     esp_lcd_panel_io_handle_t io_handle = NULL;
-    
+
     bsp_display_config_t cfg = {
         .max_transfer_sz = 320 * 48 * sizeof(uint16_t),
     };
-    
+
     bsp_display_new(&cfg, &panel_handle, &io_handle);
-    
+
     if (!panel_handle) {
         ESP_LOGE(TAG, "Failed to initialize BSP display");
         return ESP_FAIL;
     }
-    
+
     bsp_display_backlight_on();
-    
+
     // Initialize raylib port layer
     ray_port_cfg_t port_cfg = {
         .buff_psram = true,
@@ -158,14 +158,21 @@ esp_err_t board_init_display(void)
         ESP_LOGE(TAG, "Failed to initialize BSP display");
         return ESP_FAIL;
     }
-    
+
+    ESP_LOGI(TAG, "BSP display initialized, waiting for DSI display to stabilize...");
+    vTaskDelay(pdMS_TO_TICKS(200));  // DSI displays need more time (200ms)
+
     // Initialize backlight control
     ret = bsp_display_brightness_init();
     if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "Turning on backlight...");
         ret = bsp_display_backlight_on();
         if (ret != ESP_OK) {
             ESP_LOGW(TAG, "Failed to turn on backlight: %d", ret);
             // Don't fail initialization if backlight fails
+        } else {
+            ESP_LOGI(TAG, "Waiting for backlight to fully turn on...");
+            vTaskDelay(pdMS_TO_TICKS(100));  // Wait 100ms for backlight
         }
     } else {
         ESP_LOGW(TAG, "Backlight initialization failed: %d", ret);

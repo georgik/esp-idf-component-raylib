@@ -123,6 +123,127 @@ pip install idf-build-apps
 idf-build-apps build raylib/examples
 ```
 
+## For Maintainers
+
+### Upgrading Raylib Submodule
+
+This component uses the official raylib library as a Git submodule. To upgrade:
+
+```bash
+# Navigate to the raylib submodule
+cd raylib/raylib
+
+# Fetch latest changes
+git fetch origin
+
+# Check available updates
+git log HEAD..origin/master --oneline
+
+# Choose upgrade strategy:
+# Option 1: Latest master (bleeding edge)
+git checkout origin/master
+
+# Option 2: Specific release tag (recommended)
+git checkout 6.0
+
+# Option 3: Specific commit
+git checkout <commit-hash>
+
+# Return to main repo and stage the update
+cd ../..
+git add raylib/raylib
+
+# Update version in raylib/idf_component.yml
+# (e.g., 5.6.0~0 -> 6.0.0~0)
+```
+
+**Post-Upgrade Checklist:**
+
+1. **Update component wrapper code:**
+   - Check `raylib/CMakeLists.txt` for removed/renamed source files
+   - Update compile flags if software renderer API changed
+   - Check for new dependencies or removed modules
+
+2. **Update platform code:**
+   - `raylib/src/platforms/rcore_esp_idf.c` - check for API changes
+   - `raylib/include/config.h` - resolve conflicts with new raylib headers
+   - Update function calls if internal APIs changed
+
+3. **Test compilation:**
+   ```bash
+   cd raylib/examples/hello
+   idf.py fullclean
+   idf.py set-target esp32s3
+   idf.py build
+   ```
+
+4. **Test on hardware:**
+   ```bash
+   idf.py -p /dev/ttyUSB0 flash monitor
+   ```
+   Verify display output, performance, and memory usage.
+
+5. **Test multiple targets:**
+   - ESP32-S3 (most common)
+   - ESP32-P4 (if available)
+   - ESP32 (baseline)
+
+6. **Commit changes:**
+   ```bash
+   git add raylib/CMakeLists.txt raylib/include/config.h raylib/src/platforms/
+   git commit -m "Upgrade raylib to version X.Y.Z
+
+   - List breaking changes and required updates
+   - Note any API changes or removed features
+   - Indicate tested targets
+   "
+   ```
+
+**Common Issues:**
+
+- **utils.h removed in raylib 6.0**: Replace with `config.h`
+- **GRAPHICS_API_OPENGL_11_SOFTWARE renamed**: Use `GRAPHICS_API_OPENGL_SOFTWARE`
+- **swGetColorBuffer() removed**: Use `swReadPixels()` instead
+- **rlgl.h conflicts**: Use `#undef` before redefining values in config.h
+
+See [plan-upgrade.txt](plan-upgrade.txt) for detailed upgrade procedures.
+
+### Migration: Raylib 5.6 to 6.0
+
+Version 6.0 of raylib introduced several breaking changes. If you're upgrading from 5.6, note the following:
+
+**Breaking Changes:**
+
+- **utils.h module removed**: The `utils.h` header no longer exists. `TRACELOG()` and related functions moved to `config.h`. Update includes from `#include "utils.h"` to `#include "config.h"`.
+
+- **Software renderer flag renamed**: `GRAPHICS_API_OPENGL_11_SOFTWARE` is now `GRAPHICS_API_OPENGL_SOFTWARE`. Update `CMakeLists.txt` accordingly.
+
+- **Internal API changes**:
+  - `swGetColorBuffer()` was removed. Use `swReadPixels(0, 0, width, height, format, type, buffer)` instead.
+  - Software renderer (rlsw) has unused labels that require `-Wno-unused-label` compiler flag.
+
+- **rlgl.h redefinitions**: New raylib versions define rlgl configuration values in `rlgl.h` that conflict with custom `config.h`. Use `#undef` directives before redefining values.
+
+**API Compatibility:**
+
+Most raylib drawing APIs remain unchanged. Your application code should work without modifications if it uses standard raylib functions (DrawCircle, DrawText, etc.).
+
+**Performance Notes:**
+
+- Software renderer received optimizations in 6.0
+- Some low-level rendering APIs changed for better performance
+- Framebuffer management improved for embedded targets
+
+**Testing:**
+
+After upgrading, rebuild all examples and test on your target hardware. Pay attention to:
+- Display output correctness
+- Memory usage (PSRAM allocation)
+- Rendering performance
+- Color accuracy (RGB565 conversion)
+
+For more details, see the official raylib changelog at https://github.com/raysan5/raylib/blob/master/CHANGELOG
+
 ## Build from Source (For Users)
 
 Users installing this component from the component registry can build examples with:

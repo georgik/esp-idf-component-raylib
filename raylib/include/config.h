@@ -12,12 +12,16 @@
 // Include ESP-IDF headers for memory allocation
 #include "esp_heap_caps.h"
 
+// Configure software renderer to use RGB565 internally (like Raylib 5.6.0)
+// This avoids format conversion and matches the working version
+#define SW_FRAMEBUFFER_COLOR_TYPE R5G6B5
+#define SW_FRAMEBUFFER_OUTPUT_BGRA false
+
 // Define software renderer memory allocators BEFORE raylib's rlgl.h tries to define them
 // These macros will be used by the software renderer (rlsw.h)
 #define SW_MALLOC(sz) heap_caps_malloc(sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
 #define SW_REALLOC(ptr, newSz) heap_caps_realloc(ptr, newSz, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT)
 #define SW_FREE(ptr) heap_caps_free(ptr)
-#define SW_GL_FRAMEBUFFER_COPY_BGRA false
 
 //------------------------------------------------------------------------------------
 // Module selection - Minimal set for embedded 2D rendering
@@ -67,14 +71,26 @@
 //------------------------------------------------------------------------------------
 #define RL_SUPPORT_MESH_GPU_SKINNING           0      // Disabled for embedded
 
+// Undefine and redefine rlgl values for embedded systems
+#undef RL_DEFAULT_BATCH_BUFFERS
 #define RL_DEFAULT_BATCH_BUFFERS               1
+
+#undef RL_DEFAULT_BATCH_DRAWCALLS
 #define RL_DEFAULT_BATCH_DRAWCALLS           128      // Reduced for embedded
+
+#undef RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS
 #define RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS     2      // Reduced for embedded
 
+#undef RL_MAX_MATRIX_STACK_SIZE
 #define RL_MAX_MATRIX_STACK_SIZE              16      // Reduced for embedded
+
+#undef RL_MAX_SHADER_LOCATIONS
 #define RL_MAX_SHADER_LOCATIONS               16      // Reduced for embedded
 
+#undef RL_CULL_DISTANCE_NEAR
 #define RL_CULL_DISTANCE_NEAR              0.05
+
+#undef RL_CULL_DISTANCE_FAR
 #define RL_CULL_DISTANCE_FAR            1000.0        // Reduced for embedded
 
 //------------------------------------------------------------------------------------

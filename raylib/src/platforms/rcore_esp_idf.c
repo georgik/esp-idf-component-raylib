@@ -48,10 +48,11 @@
 
 #include "raylib.h"
 #include "rlgl.h"
-#include "utils.h"
+#include "config.h"
 #include <string.h>
 
 // ESP-IDF and FreeRTOS headers
+#include "esp_log.h"
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -74,9 +75,7 @@ typedef struct {
 //----------------------------------------------------------------------------------
 // Global Variables Definition
 //----------------------------------------------------------------------------------
-// extern CoreData CORE;                   // Global CORE state context
-
-static PlatformData platform = { 0 };   // Platform specific data
+static PlatformData platform = { 0};   // Platform specific data
 
 //----------------------------------------------------------------------------------
 // Module Internal Functions Declaration
@@ -349,31 +348,44 @@ static uint16_t *framebuffer = NULL;
 static int screen_width = 0;
 static int screen_height = 0;
 
-// Direct access to rlsw color buffer
-extern void *swGetColorBuffer(int *w, int *h);
+// External software renderer API
+extern void *swGetColorBuffer(int *width, int *height);
 
 // Swap back buffer with front buffer (screen drawing)
 void SwapScreenBuffer(void)
 {
-    if (!framebuffer) return;
-    
+    static int frame_count = 0;
+
+    if (!framebuffer) {
+        ESP_LOGE("RAYLIB", "Framebuffer is NULL!");
+        return;
+    }
+
     // Get direct pointer to software renderer's RGB565 framebuffer
     int sw_width, sw_height;
     uint16_t *sw_framebuffer = (uint16_t *)swGetColorBuffer(&sw_width, &sw_height);
-    
+
+    ESP_LOGI("RAYLIB", "Frame #%d: swGetColorBuffer returned %p, size %dx%d (expected %dx%d)",
+             frame_count, sw_framebuffer, sw_width, sw_height, screen_width, screen_height);
+
     if (!sw_framebuffer || sw_width != screen_width || sw_height != screen_height) {
         TRACELOG(LOG_ERROR, "PLATFORM: Software framebuffer mismatch");
         return;
     }
-    
+
+    // Log first pixel value to verify we're getting rendered data
+    ESP_LOGI("RAYLIB", "Frame #%d: First pixel = 0x%04x", frame_count, sw_framebuffer[0]);
+
     // Direct memcpy - both buffers are RGB565
     memcpy(framebuffer, sw_framebuffer, screen_width * screen_height * sizeof(uint16_t));
-    
-    // Flush via port layer (handles byte swapping and chunking)
+
+    // Flush via port layer
     esp_err_t ret = ray_port_flush_rgb565(framebuffer, 0, 0, screen_width, screen_height);
     if (ret != ESP_OK) {
-        TRACELOG(LOG_ERROR, "PLATFORM: Failed to flush framebuffer: %d", ret);
+        ESP_LOGE("RAYLIB", "Failed to flush framebuffer: %d", ret);
     }
+
+    frame_count++;
 }
 
 //----------------------------------------------------------------------------------
@@ -444,25 +456,25 @@ bool CreateWindowFramebuffer(int width, int height)
 {
     screen_width = width;
     screen_height = height;
-    
+
     // Allocate RGB565 framebuffer (prefer heap for large allocations)
     framebuffer = heap_caps_malloc(width * height * sizeof(uint16_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!framebuffer) {
         // Fallback to internal memory if PSRAM not available
         framebuffer = heap_caps_malloc(width * height * sizeof(uint16_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     }
-    
+
     if (!framebuffer) {
         TRACELOG(LOG_ERROR, "PLATFORM: Failed to allocate framebuffer");
         return false;
     }
-    
+
     // Initialize framebuffer to green (easier to spot what's not being drawn)
     for (int i = 0; i < width * height; i++) {
         framebuffer[i] = 0x07E0;  // RGB565 green
     }
 
-    TRACELOG(LOG_INFO, "PLATFORM: Framebuffer allocated: %dx%d (RGB565)", width, height);
+    TRACELOG(LOG_INFO, "PLATFORM: Display framebuffer allocated: %dx%d (RGB565)", width, height);
     return true;
 }
 
@@ -477,7 +489,7 @@ int InitPlatform(void)
                  "Call ray_port_init() and ray_port_add_display() before InitWindow().");
         return -1;
     }
-    
+
     CreateWindowFramebuffer(width, height);
     TRACELOG(LOG_INFO, "PLATFORM: ESP-IDF initialized successfully (%dx%d)", width, height);
 
