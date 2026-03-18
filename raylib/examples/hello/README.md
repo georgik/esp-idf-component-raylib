@@ -15,9 +15,9 @@ This example demonstrates running raylib with the software renderer on ESP-IDF u
 ## Supported Hardware
 
 **Fully Tested & Verified:**
-- **ESP32-S3-BOX-3** - 320x240 ILI9341 (SPI) ✅
-- **M5Stack Core S3** - 320x240 ILI9342C (SPI) ✅
-- **ESP32-P4 Function EV** - 1024x600 EK79007 (MIPI-DSI) ✅
+- **ESP32-S3-BOX-3** - 320x240 ILI9341 (SPI)
+- **M5Stack Core S3** - 320x240 ILI9342C (SPI)
+- **ESP32-P4 Function EV** - 1024x600 EK79007 (MIPI-DSI)
 
 **Configurations Available:**
 - **ESP32-C6 DevKit** - Generic display support
@@ -124,10 +124,6 @@ hello/
 │   └── idf_component.yml      # Conditional BSP + component dependencies
 ├── sdkconfig.defaults         # Base config for all boards
 ├── sdkconfig.defaults.*       # Board-specific configs
-├── support/                   # ESPBrew generated scripts
-│   ├── build-esp-box-3.sh
-│   ├── flash-esp-box-3.sh
-│   └── ...
 └── wokwi/                     # Wokwi simulation configs
     ├── esp-box-3/
     ├── m5stack_core_s3/

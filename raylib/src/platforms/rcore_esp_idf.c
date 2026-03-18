@@ -46,9 +46,9 @@
 *
 **********************************************************************************************/
 
+#include "config.h"         // Must be first to set SW_FRAMEBUFFER_COLOR_TYPE before rlgl.h
 #include "raylib.h"
 #include "rlgl.h"
-#include "config.h"
 #include <string.h>
 
 // ESP-IDF and FreeRTOS headers
@@ -351,6 +351,15 @@ static int screen_height = 0;
 // External software renderer API
 extern void *swGetColorBuffer(int *width, int *height);
 
+// RLSW state structure (defined in rlsw.h)
+extern struct {
+    struct {
+        void *pixels;
+        int format;
+        int width, height;
+    } *colorBuffer;
+} RLSW;
+
 // Swap back buffer with front buffer (screen drawing)
 void SwapScreenBuffer(void)
 {
@@ -365,19 +374,19 @@ void SwapScreenBuffer(void)
     int sw_width, sw_height;
     uint16_t *sw_framebuffer = (uint16_t *)swGetColorBuffer(&sw_width, &sw_height);
 
-    ESP_LOGI("RAYLIB", "Frame #%d: swGetColorBuffer returned %p, size %dx%d (expected %dx%d)",
-             frame_count, sw_framebuffer, sw_width, sw_height, screen_width, screen_height);
-
     if (!sw_framebuffer || sw_width != screen_width || sw_height != screen_height) {
         TRACELOG(LOG_ERROR, "PLATFORM: Software framebuffer mismatch");
         return;
     }
 
-    // Log first pixel value to verify we're getting rendered data
-    ESP_LOGI("RAYLIB", "Frame #%d: First pixel = 0x%04x", frame_count, sw_framebuffer[0]);
-
-    // Direct memcpy - both buffers are RGB565
-    memcpy(framebuffer, sw_framebuffer, screen_width * screen_height * sizeof(uint16_t));
+    // Copy with vertical flip for LCD coordinate system
+    // LCD panels typically have origin (0,0) at bottom-left, need to flip
+    for (int row = 0; row < screen_height; row++) {
+        int src_row = screen_height - 1 - row;  // Flip vertically
+        memcpy(framebuffer + (row * screen_width),
+               sw_framebuffer + (src_row * screen_width),
+               screen_width * sizeof(uint16_t));
+    }
 
     // Flush via port layer
     esp_err_t ret = ray_port_flush_rgb565(framebuffer, 0, 0, screen_width, screen_height);

@@ -18,11 +18,11 @@ This implementation uses a **board-agnostic port layer** (`esp_raylib_port`) tha
 Test Raylib on ESP32 directly in your browser using Wokwi simulation (no hardware or build required):
 
 
-[![ESP32-S3-BOX-3 Green Screen](docs/img/raylib-hello-esp-box-3-green.webp)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2Fv5.6.0%2Fraylib-hello-v5.6.0-esp-box-3.bin)
+[![ESP32-S3-BOX-3 Green Screen](docs/img/raylib-hello-esp-box-3-green.webp)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2Fv6.0.0%2Fraylib-hello-v6.0.0-esp-box-3.bin)
 
-[![ESP32-S3-BOX-3 Hello World](docs/img/raylib-hello-esp-box-3-hello.webp)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2Fv5.6.0%2Fraylib-hello-v5.6.0-esp-box-3.bin)
+[![ESP32-S3-BOX-3 Hello World](docs/img/raylib-hello-esp-box-3-hello.webp)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2Fv6.0.0%2Fraylib-hello-v6.0.0-esp-box-3.bin)
 
-**[Run ESP32-S3-BOX-3 (320x240)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2Fv5.6.0%2Fraylib-hello-v5.6.0-esp-box-3.bin)**
+**[Run ESP32-S3-BOX-3 (320x240)](https://wokwi.com/experimental/viewer?diagram=https%3A%2F%2Fraw.githubusercontent.com%2Fgeorgik%2Fesp-idf-component-raylib%2Fmain%2Fraylib%2Fexamples%2Fhello%2Fwokwi%2Fesp-box-3%2Fdiagram.json&firmware=https%3A%2F%2Fgithub.com%2Fgeorgik%2Fesp-idf-component-raylib%2Freleases%2Fdownload%2Fv6.0.0%2Fraylib-hello-v6.0.0-esp-box-3.bin)**
 
 
 ## Flash Pre-built Binaries
@@ -160,16 +160,23 @@ git add raylib/raylib
 **Post-Upgrade Checklist:**
 
 1. **Update component wrapper code:**
-   - Check `raylib/CMakeLists.txt` for removed/renamed source files
-   - Update compile flags if software renderer API changed
-   - Check for new dependencies or removed modules
+   - [ ] Remove `utils.c` from `raylib/CMakeLists.txt` `SRCS` (removed in 6.0)
+   - [ ] Update compile flag: `GRAPHICS_API_OPENGL_11_SOFTWARE` → `GRAPHICS_API_OPENGL_SOFTWARE`
+   - [ ] Add `-Wno-unused-label` to compile options (software renderer has unused labels)
+   - [ ] Add `SW_FRAMEBUFFER_COLOR_TYPE=R5G6B5` to compile definitions
 
 2. **Update platform code:**
-   - `raylib/src/platforms/rcore_esp_idf.c` - check for API changes
-   - `raylib/include/config.h` - resolve conflicts with new raylib headers
-   - Update function calls if internal APIs changed
+   - [ ] Fix include order in `raylib/src/platforms/rcore_esp_idf.c`: `config.h` must be before `rlgl.h`
+   - [ ] Add render dimensions initialization in `raylib/raylib/src/rcore.c` (before `rlglInit()` call)
+   - [ ] Restore `swGetColorBuffer()` in `raylib/raylib/src/external/rlsw.h` (function declaration + implementation)
+   - [ ] Add vertical flip in `SwapScreenBuffer()` for LCD coordinate system
 
-3. **Test compilation:**
+3. **Update config.h:**
+   - [ ] Ensure `SW_FRAMEBUFFER_COLOR_TYPE R5G6B5` is defined
+   - [ ] Ensure `SW_COLOR_BUFFER_BITS=16` is set
+   - [ ] Check for conflicts with new raylib headers
+
+4. **Test compilation:**
    ```bash
    cd raylib/examples/hello
    idf.py fullclean
@@ -177,72 +184,212 @@ git add raylib/raylib
    idf.py build
    ```
 
-4. **Test on hardware:**
+5. **Test on hardware:**
    ```bash
    idf.py -p /dev/ttyUSB0 flash monitor
    ```
-   Verify display output, performance, and memory usage.
+   Verify:
+   - [ ] Display shows correct colors (RGB565, not RGBA8888)
+   - [ ] Image orientation is correct (not upside down)
+   - [ ] Text is readable
+   - [ ] Animation is smooth
+   - [ ] No memory corruption
 
-5. **Test multiple targets:**
-   - ESP32-S3 (most common)
-   - ESP32-P4 (if available)
-   - ESP32 (baseline)
+6. **Test multiple targets:**
+   - [ ] ESP32-S3 (most common)
+   - [ ] ESP32-P4 (if available)
+   - [ ] ESP32 (baseline)
 
-6. **Commit changes:**
+7. **Commit changes:**
    ```bash
-   git add raylib/CMakeLists.txt raylib/include/config.h raylib/src/platforms/
-   git commit -m "Upgrade raylib to version X.Y.Z
-
-   - List breaking changes and required updates
-   - Note any API changes or removed features
-   - Indicate tested targets
-   "
+   git add raylib/CMakeLists.txt raylib/include/config.h raylib/src/platforms/ raylib/raylib/src/rcore.c raylib/raylib/src/external/rlsw.h
+   git commit -m "Upgrade raylib to 6.0.0"
    ```
 
-**Common Issues:**
+**Common Issues and Fixes:**
 
-- **utils.h removed in raylib 6.0**: Replace with `config.h`
-- **GRAPHICS_API_OPENGL_11_SOFTWARE renamed**: Use `GRAPHICS_API_OPENGL_SOFTWARE`
-- **swGetColorBuffer() removed**: Use `swReadPixels()` instead
-- **rlgl.h conflicts**: Use `#undef` before redefining values in config.h
+- **Display shows wrong colors/purple tint**:
+  - **Cause**: Software renderer using RGBA8888 instead of RGB565
+  - **Fix**: Add `SW_FRAMEBUFFER_COLOR_TYPE=R5G6B5` to compile definitions AND ensure config.h is included before rlgl.h
 
-See [plan-upgrade.txt](plan-upgrade.txt) for detailed upgrade procedures.
+- **Display shows nothing/green screen only**:
+  - **Cause**: `swGetColorBuffer()` returning NULL or 0×0 dimensions
+  - **Fix**: Initialize `CORE.Window.render.width/height` in `rcore.c` before `rlglInit()` call
+
+- **Display is upside down**:
+  - **Cause**: LCD coordinate system origin differs from software renderer
+  - **Fix**: Add vertical flip in `SwapScreenBuffer()` when copying framebuffer
+
+- **Build error: undefined reference to swGetColorBuffer**:
+  - **Cause**: Function removed in Raylib 6.0
+  - **Fix**: Restore function in rlsw.h (function declaration + implementation)
+
+- **Build error: utils.c not found**:
+  - **Cause**: File removed in Raylib 6.0
+  - **Fix**: Remove from CMakeLists.txt SRCS list
 
 ### Migration: Raylib 5.6 to 6.0
 
-Version 6.0 of raylib introduced several breaking changes. If you're upgrading from 5.6, note the following:
+Version 6.0 of raylib introduced several breaking changes that required specific updates to the ESP-IDF wrapper. This section documents the changes made to the wrapper component during the upgrade.
 
-**Breaking Changes:**
+#### Wrapper-Specific Changes
 
-- **utils.h module removed**: The `utils.h` header no longer exists. `TRACELOG()` and related functions moved to `config.h`. Update includes from `#include "utils.h"` to `#include "config.h"`.
+The ESP-IDF wrapper required the following modifications to work with Raylib 6.0:
 
-- **Software renderer flag renamed**: `GRAPHICS_API_OPENGL_11_SOFTWARE` is now `GRAPHICS_API_OPENGL_SOFTWARE`. Update `CMakeLists.txt` accordingly.
+**1. Include Order Fix**
 
-- **Internal API changes**:
-  - `swGetColorBuffer()` was removed. Use `swReadPixels(0, 0, width, height, format, type, buffer)` instead.
-  - Software renderer (rlsw) has unused labels that require `-Wno-unused-label` compiler flag.
+**Problem**: The software renderer's internal pixel format was defaulting to RGBA8888 instead of RGB565.
 
-- **rlgl.h redefinitions**: New raylib versions define rlgl configuration values in `rlgl.h` that conflict with custom `config.h`. Use `#undef` directives before redefining values.
+**Root Cause**: `config.h` (which defines `SW_FRAMEBUFFER_COLOR_TYPE`) was included **after** `rlgl.h`. Since `rlgl.h` includes the software renderer (`rlsw.h`), the `#ifndef SW_FRAMEBUFFER_COLOR_TYPE` check in `rlsw.h` evaluated to `true` before the wrapper's configuration could take effect.
 
-**API Compatibility:**
+**Fix**: Changed include order in `raylib/src/platforms/rcore_esp_idf.c`:
+```c
+// Before:
+#include "raylib.h"
+#include "rlgl.h"
+#include "config.h"  // Too late!
 
-Most raylib drawing APIs remain unchanged. Your application code should work without modifications if it uses standard raylib functions (DrawCircle, DrawText, etc.).
+// After:
+#include "config.h"   // Must be first
+#include "raylib.h"
+#include "rlgl.h"
+```
 
-**Performance Notes:**
+**2. Compile Definition for Pixel Format**
 
-- Software renderer received optimizations in 6.0
-- Some low-level rendering APIs changed for better performance
-- Framebuffer management improved for embedded targets
+**Problem**: Even with correct include order, the pixel format was still RGBA8888.
 
-**Testing:**
+**Root Cause**: Header-only macro definitions don't always propagate correctly through complex include chains.
 
-After upgrading, rebuild all examples and test on your target hardware. Pay attention to:
-- Display output correctness
-- Memory usage (PSRAM allocation)
-- Rendering performance
-- Color accuracy (RGB565 conversion)
+**Fix**: Added `SW_FRAMEBUFFER_COLOR_TYPE=R5G6B5` directly to compile definitions in `raylib/CMakeLists.txt`:
+```cmake
+target_compile_definitions(${COMPONENT_TARGET} PUBLIC
+    GRAPHICS_API_OPENGL_SOFTWARE
+    PLATFORM_CUSTOM
+    SW_COLOR_BUFFER_BITS=16
+    SW_DEPTH_BUFFER_BITS=16
+    SW_FRAMEBUFFER_COLOR_TYPE=R5G6B5  # Added this
+)
+```
 
-For more details, see the official raylib changelog at https://github.com/raysan5/raylib/blob/master/CHANGELOG
+**3. Restored swGetColorBuffer() Function**
+
+**Problem**: Direct framebuffer access was removed in Raylib 6.0 PR #5655. The replacement `swReadPixels()` function was not working correctly for embedded use (it returns conversion data, not raw framebuffer).
+
+**Solution**: Added `swGetColorBuffer()` back to `raylib/raylib/src/external/rlsw.h`:
+```c
+// Function declaration (after line 672)
+SWAPI void *swGetColorBuffer(int *width, int *height);
+
+// Function implementation (after swReadPixels)
+void *swGetColorBuffer(int *width, int *height)
+{
+    if (width) *width = RLSW.colorBuffer->width;
+    if (height) *height = RLSW.colorBuffer->height;
+    return RLSW.colorBuffer->pixels;
+}
+```
+
+**Why**: Direct framebuffer access is essential for embedded platforms to avoid expensive format conversions on every frame.
+
+**4. Fixed Render Dimensions Initialization**
+
+**Problem**: Software renderer was initialized with 0×0 dimensions, causing `swGetColorBuffer()` to return zero-sized buffer.
+
+**Root Cause**: In `raylib/raylib/src/rcore.c`, `rlglInit()` is called with `CORE.Window.render.width/height` before these values are set (they're set later in `SetupViewport()`).
+
+**Fix**: Added initialization code in `rcore.c` (lines 686-692) to set render dimensions before `rlglInit()`:
+```c
+// FIX: Initialize render dimensions for embedded platforms
+// On desktop platforms, these are set by the window creation code.
+// On embedded platforms with no window manager, we need to set them
+// before rlglInit() is called.
+if (CORE.Window.render.width == 0 || CORE.Window.render.height == 0)
+{
+    CORE.Window.render.width = CORE.Window.screen.width;
+    CORE.Window.render.height = CORE.Window.screen.height;
+}
+```
+
+**5. Added Vertical Flip for LCD Coordinate System**
+
+**Problem**: Display was upside down compared to expected output.
+
+**Root Cause**: LCD panels typically have coordinate origin (0,0) at bottom-left, while software renderer assumes top-left.
+
+**Fix**: Modified `SwapScreenBuffer()` in `raylib/src/platforms/rcore_esp_idf.c` to flip framebuffer vertically:
+```c
+// Copy with vertical flip for LCD coordinate system
+for (int row = 0; row < screen_height; row++) {
+    int src_row = screen_height - 1 - row;  // Flip vertically
+    memcpy(framebuffer + (row * screen_width),
+           sw_framebuffer + (src_row * screen_width),
+           screen_width * sizeof(uint16_t));
+}
+```
+
+#### Raylib 6.0 Breaking Changes (Generic)
+
+These are changes in the upstream raylib library that affected all platforms:
+
+**1. utils.h Module Removed**
+
+- **Change**: The `utils.h` header no longer exists
+- **Impact**: `TRACELOG()` and related functions moved to `config.h`
+- **Fix**: Update includes from `#include "utils.h"` to `#include "config.h"`
+
+**2. Software Renderer Flag Renamed**
+
+- **Change**: `GRAPHICS_API_OPENGL_11_SOFTWARE` → `GRAPHICS_API_OPENGL_SOFTWARE`
+- **Impact**: Compile flag in `CMakeLists.txt` needed updating
+- **Fix**: Updated in wrapper's `CMakeLists.txt`
+
+**3. Removed Source Files**
+
+- **Change**: `utils.c` removed from raylib 6.0
+- **Impact**: Build failure if still in `SRCS` list
+- **Fix**: Removed from `CMakeLists.txt` `SRCS`
+
+**4. Software Renderer Warnings**
+
+- **Change**: New unused labels in `rlsw.h`
+- **Impact**: Compiler warnings about unused labels
+- **Fix**: Added `-Wno-unused-label` to compile options
+
+#### API Compatibility
+
+Most raylib drawing APIs remain unchanged. Your application code should work without modifications if it uses standard raylib functions:
+- `DrawCircle()`, `DrawRectangle()`, `DrawText()`
+- `ClearBackground()`, `BeginDrawing()`, `EndDrawing()`
+- Texture loading and rendering
+- Input handling
+
+**Performance improvements in 6.0**:
+- Software renderer optimizations
+- Better framebuffer management for embedded targets
+- Improved low-level rendering APIs
+
+#### Testing Checklist
+
+After upgrading, verify on actual hardware:
+
+- [ ] Display shows correct colors (not inverted or wrong format)
+- [ ] Image is oriented correctly (not upside down)
+- [ ] Text rendering is readable
+- [ ] Memory usage is within PSRAM limits
+- [ ] Performance is acceptable (frame rate)
+- [ ] All drawing primitives work (shapes, text, textures)
+- [ ] No memory leaks or corruption over time
+
+#### Important Points for Embedded Development
+
+1. **Pixel format configuration must happen at compile time**, not through headers alone
+2. **Direct framebuffer access is critical** for embedded performance - avoid conversion functions
+3. **Coordinate system differences** between software renderer and LCD panels require manual flipping
+4. **Render dimensions must be initialized before `rlglInit()`** on embedded platforms
+5. **Always test on actual hardware** - simulators may not catch pixel format issues
+
+For more details on upstream changes, see the official raylib changelog: https://github.com/raysan5/raylib/blob/master/CHANGELOG
 
 ## Build from Source (For Users)
 
@@ -333,12 +480,7 @@ See [Component README](raylib/README.md) for detailed information.
 
 ## Contributing
 
-Contributions welcome! Areas of interest:
-- Additional board support
-- Performance optimizations
-- Input handling implementation
-- Color format fixes
-- Audio backend
+Contributions welcome.
 
 ## License
 

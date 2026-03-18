@@ -135,9 +135,9 @@ esp_err_t ray_port_add_display(const ray_port_display_cfg_t* disp)
 #endif
     
     ray_port_unlock();
-    
+
     ESP_LOGI(TAG, "Display registered: %dx%d, DMA=%d", disp->hres, disp->vres, disp->dma_capable);
-    
+
     return ESP_OK;
 }
 

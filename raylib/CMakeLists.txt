@@ -26,6 +26,7 @@ target_compile_definitions(${COMPONENT_TARGET} PUBLIC
     PLATFORM_CUSTOM
     SW_COLOR_BUFFER_BITS=16
     SW_DEPTH_BUFFER_BITS=16
+    SW_FRAMEBUFFER_COLOR_TYPE=R5G6B5
 )
 
 # Prioritize our custom include directory for config.h lookup and suppress warnings
