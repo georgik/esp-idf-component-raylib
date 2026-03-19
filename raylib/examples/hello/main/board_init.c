@@ -80,7 +80,18 @@ esp_err_t board_init_display(void)
 {
     ESP_LOGI(TAG, "Initializing M5Stack Core S3 display via BSP...");
 
-    // Initialize BSP display (noglib version)
+    // IMPORTANT: Follow BSP initialization order exactly!
+    // Step 1: Initialize I2C for PMU communication
+    ESP_LOGI(TAG, "Step 1: Initializing I2C...");
+    ESP_ERROR_CHECK(bsp_i2c_init());
+
+    // Step 2: Initialize PMU backlight control (BSP does this BEFORE display init)
+    ESP_LOGI(TAG, "Step 2: Initializing backlight control...");
+    ESP_ERROR_CHECK(bsp_display_brightness_init());
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    // Step 3: Initialize display panel (bsp_display_new internally enables LCD/CAMERA power via I2C)
+    ESP_LOGI(TAG, "Step 3: Creating display panel...");
     esp_lcd_panel_handle_t panel_handle = NULL;
     esp_lcd_panel_io_handle_t io_handle = NULL;
 
@@ -95,7 +106,16 @@ esp_err_t board_init_display(void)
         return ESP_FAIL;
     }
 
+    // Step 4: Turn on the display panel (not just backlight!)
+    ESP_LOGI(TAG, "Step 4: Powering on display panel...");
+    esp_lcd_panel_disp_on_off(panel_handle, true);
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Step 5: Set brightness and turn on backlight
+    ESP_LOGI(TAG, "Step 5: Setting brightness to 100%%...");
+    bsp_display_brightness_set(100);
     bsp_display_backlight_on();
+    vTaskDelay(pdMS_TO_TICKS(50));
 
     // Initialize raylib port layer
     ray_port_cfg_t port_cfg = {
@@ -109,9 +129,9 @@ esp_err_t board_init_display(void)
         .rotation = 0,
         .perf_stats = true,
     };
-    
+
     ESP_ERROR_CHECK(ray_port_init(&port_cfg));
-    
+
     ray_port_display_cfg_t disp_cfg = {
         .panel = panel_handle,
         .io = io_handle,
@@ -120,9 +140,9 @@ esp_err_t board_init_display(void)
         .monochrome = false,
         .dma_capable = true,
     };
-    
+
     ESP_ERROR_CHECK(ray_port_add_display(&disp_cfg));
-    
+
     ESP_LOGI(TAG, "Display initialized: 320x240");
     return ESP_OK;
 }
