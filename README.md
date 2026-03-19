@@ -33,6 +33,7 @@ No build required! Flash pre-built binaries directly from your browser using ESP
 
 **Supported boards:**
 - ESP32-S3-BOX-3
+- M5Stack Core2
 
 **Requirements:**
 - Chrome or Edge browser (WebSerial support required)
@@ -86,6 +87,11 @@ idf.py build
 # ESP32-P4
 cp sdkconfig.defaults.esp32_p4_function_ev_board sdkconfig.defaults
 idf.py set-target esp32p4
+idf.py build
+
+# M5Stack Core2
+cp sdkconfig.defaults.m5stack_core2 sdkconfig.defaults
+idf.py set-target esp32
 idf.py build
 ```
 
@@ -445,6 +451,7 @@ esp-idf-component-raylib/
 - **ESP32-S3-BOX-3** (320x240 ILI9341, SPI)
 - **ESP32-P4 Function EV Board** (1024x600, MIPI-DSI)
 - **M5Stack Core S3** (320x240, SPI)
+- **M5Stack Core2** (320x240 ILI9342C, SPI, PMU-powered)
 
 **Easy to add:** Any board with ESP-BSP noglib support or custom esp_lcd panel.
 
