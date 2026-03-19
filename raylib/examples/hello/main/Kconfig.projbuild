@@ -16,6 +16,11 @@ menu "Board Configuration"
             help
                 M5Stack Core S3 with 320x240 ILI9342C display.
 
+        config BOARD_M5STACK_CORE2
+            bool "M5Stack Core2"
+            help
+                M5Stack Core2 with 320x240 ILI9342C display.
+
         config BOARD_ESP32_P4_FUNCTION_EV
             bool "ESP32-P4 Function EV Board"
             help

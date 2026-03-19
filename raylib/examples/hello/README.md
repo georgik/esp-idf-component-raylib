@@ -17,6 +17,7 @@ This example demonstrates running raylib with the software renderer on ESP-IDF u
 **Fully Tested & Verified:**
 - **ESP32-S3-BOX-3** - 320x240 ILI9341 (SPI)
 - **M5Stack Core S3** - 320x240 ILI9342C (SPI)
+- **M5Stack Core2** - 320x240 ILI9342C (SPI, PMU-powered)
 - **ESP32-P4 Function EV** - 1024x600 EK79007 (MIPI-DSI)
 
 **Configurations Available:**
@@ -31,21 +32,25 @@ This example demonstrates running raylib with the software renderer on ESP-IDF u
 ```bash
 # For ESP-BOX-3
 idf.py set-target esp32s3
-idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp-box-3" reconfigure build flash monitor
+idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults.esp-box-3" reconfigure build flash monitor
 
 # For M5Stack Core S3
 idf.py set-target esp32s3
-idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.m5stack_core_s3" reconfigure build flash monitor
+idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults.m5stack_core_s3" reconfigure build flash monitor
 
 # For ESP32-P4 Function EV
 idf.py set-target esp32p4
-idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp32_p4_function_ev_board" reconfigure build flash monitor
+idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults.esp32_p4_function_ev_board" reconfigure build flash monitor
+
+# For M5Stack Core2
+idf.py set-target esp32
+idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults.m5stack_core2" reconfigure build flash monitor
 ```
 
 ### Method 2: Using Environment Variable
 ```bash
 # Set once
-export SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp-box-3"
+export SDKCONFIG_DEFAULTS="sdkconfig.defaults.esp-box-3"
 idf.py set-target esp32s3
 idf.py reconfigure build flash monitor
 ```
@@ -100,6 +105,7 @@ Install ESPBrew: https://github.com/georgik/espbrew
 
 - **ESP32-S3-BOX-3** (320x240): ~15-20 FPS
 - **M5Stack Core S3** (320x240): ~15-20 FPS
+- **M5Stack Core2** (320x240): ~15-20 FPS
 - **ESP32-P4** (1024x600): ~5-10 FPS (larger framebuffer)
 
 ## Known Limitations
@@ -122,7 +128,6 @@ hello/
 │   ├── Kconfig.projbuild      # Board selection menu
 │   ├── CMakeLists.txt         # Requires georgik__raylib
 │   └── idf_component.yml      # Conditional BSP + component dependencies
-├── sdkconfig.defaults         # Base config for all boards
 ├── sdkconfig.defaults.*       # Board-specific configs
 └── wokwi/                     # Wokwi simulation configs
     ├── esp-box-3/
