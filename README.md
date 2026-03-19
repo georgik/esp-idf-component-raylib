@@ -84,8 +84,13 @@ cp sdkconfig.defaults.esp-box-3 sdkconfig.defaults
 idf.py set-target esp32s3
 idf.py build
 
-# ESP32-P4
+# ESP32-P4 (Chip Revision 3.0+)
 cp sdkconfig.defaults.esp32_p4_function_ev_board sdkconfig.defaults
+idf.py set-target esp32p4
+idf.py build
+
+# ESP32-P4 (Chip Revision 1.0 - older boards)
+cp sdkconfig.defaults.esp32_p4_function_ev_board_rev-1.0 sdkconfig.defaults
 idf.py set-target esp32p4
 idf.py build
 
@@ -94,6 +99,17 @@ cp sdkconfig.defaults.m5stack_core2 sdkconfig.defaults
 idf.py set-target esp32
 idf.py build
 ```
+
+**Note - ESP32-P4 Chip Revisions:**
+The ESP32-P4 Function EV Board is available with different chip revisions:
+- **Rev 3.0+**: Use `sdkconfig.defaults.esp32_p4_function_ev_board` (200MHz Octal PSRAM)
+- **Rev 1.0**: Use `sdkconfig.defaults.esp32_p4_function_ev_board_rev-1.0` (compatible with older silicon)
+
+To check your chip revision:
+```bash
+esptool.py --port /dev/ttyUSB0 chip_id
+```
+Look for "Revision: X.Y" in the output.
 
 ### Clean Build
 
@@ -449,7 +465,7 @@ esp-idf-component-raylib/
 
 **Fully tested and working:**
 - **ESP32-S3-BOX-3** (320x240 ILI9341, SPI)
-- **ESP32-P4 Function EV Board** (1024x600, MIPI-DSI)
+- **ESP32-P4 Function EV Board** (1024x600, MIPI-DSI) - Rev 1.0 and 3.0+
 - **M5Stack Core S3** (320x240, SPI)
 - **M5Stack Core2** (320x240 ILI9342C, SPI, PMU-powered)
 
