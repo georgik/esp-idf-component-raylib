@@ -19,6 +19,11 @@ dependencies:
     matches:
       - if: "$CONFIG{BOARD_M5STACK_CORE_S3} == True"
 
+  espressif/m5stack_core_2_noglib:
+    version: "*"
+    matches:
+      - if: "$CONFIG{BOARD_M5STACK_CORE2} == True"
+
   espressif/esp32_p4_function_ev_board_noglib:
     version: "*"
     matches:

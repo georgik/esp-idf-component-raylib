@@ -1,13 +1,10 @@
-# This file was generated using idf.py save-defconfig. It can be edited manually.
-# Espressif IoT Development Framework (ESP-IDF) 5.4.0 Project Minimal Configuration
-#
+    # This file was generated using idf.py save-defconfig. It can be edited manually.
+    # Espressif IoT Development Framework (ESP-IDF) 6.1.0 Project Minimal Configuration
+    #
+    # default:
 CONFIG_IDF_TARGET="esp32s3"
 CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
-CONFIG_SPIRAM_MODE_QUAD=y
-CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
-
-# Board selection (for BSP conditional compilation)
 CONFIG_BOARD_M5STACK_CORE_S3=y
-
+CONFIG_SPIRAM=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=32000
-

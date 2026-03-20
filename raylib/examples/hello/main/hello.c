@@ -74,12 +74,12 @@ void raylib_task(void *pvParameter)
         int textX = (screenWidth - textWidth) / 2;
         int textY = (screenHeight - fontSize) / 2;
         DrawText(message, textX, textY, fontSize, BLACK);
-        
-        // Draw position markers to debug coordinate system
-        DrawCircle(0, 0, 10, YELLOW);                    // Top-left origin
-        DrawCircle(screenWidth-1, 0, 10, ORANGE);        // Top-right
-        DrawCircle(0, screenHeight-1, 10, PURPLE);       // Bottom-left
-        DrawCircle(screenWidth-1, screenHeight-1, 10, PINK); // Bottom-right
+
+        // Draw simple rectangles as corner markers (faster than circles)
+        DrawRectangle(0, 0, 20, 20, YELLOW);             // Top-left origin
+        DrawRectangle(screenWidth-20, 0, 20, 20, ORANGE); // Top-right
+        DrawRectangle(0, screenHeight-20, 20, 20, PURPLE); // Bottom-left
+        DrawRectangle(screenWidth-20, screenHeight-20, 20, 20, PINK); // Bottom-right
 
         // End drawing
         EndDrawing();

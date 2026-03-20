@@ -32,22 +32,22 @@ esp_err_t board_init_display(void)
     };
     
     bsp_display_new(&cfg, &panel_handle, &io_handle);
-    
+
     if (!panel_handle) {
         ESP_LOGE(TAG, "Failed to initialize BSP display");
         return ESP_FAIL;
     }
-    
+
     // Turn on backlight
     bsp_display_backlight_on();
-    
+
     // Initialize raylib port layer
     ray_port_cfg_t port_cfg = {
         .buff_psram = true,
         .double_buffer = false,
         .buffer_pixels = 0,
         .chunk_bytes = 0,  // Auto
-        .swap_rgb_bytes = true,  // SPI LCDs need byte swap
+        .swap_rgb_bytes = true,  // SPI LCDs need byte swap (bug is now fixed)
         .hres = 320,
         .vres = 240,
         .rotation = 0,
@@ -79,24 +79,44 @@ esp_err_t board_init_display(void)
 esp_err_t board_init_display(void)
 {
     ESP_LOGI(TAG, "Initializing M5Stack Core S3 display via BSP...");
-    
-    // Initialize BSP display (noglib version)
+
+    // IMPORTANT: Follow BSP initialization order exactly!
+    // Step 1: Initialize I2C for PMU communication
+    ESP_LOGI(TAG, "Step 1: Initializing I2C...");
+    ESP_ERROR_CHECK(bsp_i2c_init());
+
+    // Step 2: Initialize PMU backlight control (BSP does this BEFORE display init)
+    ESP_LOGI(TAG, "Step 2: Initializing backlight control...");
+    ESP_ERROR_CHECK(bsp_display_brightness_init());
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    // Step 3: Initialize display panel (bsp_display_new internally enables LCD/CAMERA power via I2C)
+    ESP_LOGI(TAG, "Step 3: Creating display panel...");
     esp_lcd_panel_handle_t panel_handle = NULL;
     esp_lcd_panel_io_handle_t io_handle = NULL;
-    
+
     bsp_display_config_t cfg = {
         .max_transfer_sz = 320 * 48 * sizeof(uint16_t),
     };
-    
+
     bsp_display_new(&cfg, &panel_handle, &io_handle);
-    
+
     if (!panel_handle) {
         ESP_LOGE(TAG, "Failed to initialize BSP display");
         return ESP_FAIL;
     }
-    
+
+    // Step 4: Turn on the display panel (not just backlight!)
+    ESP_LOGI(TAG, "Step 4: Powering on display panel...");
+    esp_lcd_panel_disp_on_off(panel_handle, true);
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Step 5: Set brightness and turn on backlight
+    ESP_LOGI(TAG, "Step 5: Setting brightness to 100%%...");
+    bsp_display_brightness_set(100);
     bsp_display_backlight_on();
-    
+    vTaskDelay(pdMS_TO_TICKS(50));
+
     // Initialize raylib port layer
     ray_port_cfg_t port_cfg = {
         .buff_psram = true,
@@ -109,9 +129,9 @@ esp_err_t board_init_display(void)
         .rotation = 0,
         .perf_stats = true,
     };
-    
+
     ESP_ERROR_CHECK(ray_port_init(&port_cfg));
-    
+
     ray_port_display_cfg_t disp_cfg = {
         .panel = panel_handle,
         .io = io_handle,
@@ -120,9 +140,88 @@ esp_err_t board_init_display(void)
         .monochrome = false,
         .dma_capable = true,
     };
-    
+
     ESP_ERROR_CHECK(ray_port_add_display(&disp_cfg));
-    
+
+    ESP_LOGI(TAG, "Display initialized: 320x240");
+    return ESP_OK;
+}
+
+#elif CONFIG_BOARD_M5STACK_CORE2
+
+#include "bsp/esp-bsp.h"
+
+esp_err_t board_init_display(void)
+{
+    ESP_LOGI(TAG, "Initializing M5Stack Core2 display via BSP...");
+
+    // IMPORTANT: Follow BSP initialization order exactly!
+    // Step 1: Initialize I2C for PMU communication
+    ESP_LOGI(TAG, "Step 1: Initializing I2C...");
+    ESP_ERROR_CHECK(bsp_i2c_init());
+
+    // Step 2: Enable LCD power via PMU (must be before display init)
+    ESP_LOGI(TAG, "Step 2: Powering LCD via PMU...");
+    ESP_ERROR_CHECK(bsp_feature_enable(BSP_FEATURE_LCD, true));
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Step 3: Initialize PMU backlight control (BSP does this BEFORE display init)
+    ESP_LOGI(TAG, "Step 3: Initializing backlight control...");
+    ESP_ERROR_CHECK(bsp_display_brightness_init());
+    ESP_LOGI(TAG, "Step 4: Creating display panel...");
+
+    // Step 4: Initialize display panel
+    esp_lcd_panel_handle_t panel_handle = NULL;
+    esp_lcd_panel_io_handle_t io_handle = NULL;
+
+    bsp_display_config_t cfg = {
+        .max_transfer_sz = 320 * 48 * sizeof(uint16_t),
+    };
+
+    bsp_display_new(&cfg, &panel_handle, &io_handle);
+
+    if (!panel_handle) {
+        ESP_LOGE(TAG, "Failed to initialize BSP display");
+        return ESP_FAIL;
+    }
+
+    // Step 5: Turn on the display panel (not just backlight!)
+    ESP_LOGI(TAG, "Step 5: Powering on display panel...");
+    esp_lcd_panel_disp_on_off(panel_handle, true);
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Step 6: Set brightness and turn on backlight
+    ESP_LOGI(TAG, "Step 6: Setting brightness to 100%%...");
+    bsp_display_brightness_set(100);
+    bsp_display_backlight_on();
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    // Initialize raylib port layer
+    ray_port_cfg_t port_cfg = {
+        .buff_psram = true,
+        .double_buffer = false,
+        .buffer_pixels = 0,
+        .chunk_bytes = 0,
+        .swap_rgb_bytes = true,
+        .hres = 320,
+        .vres = 240,
+        .rotation = 0,
+        .perf_stats = true,
+    };
+
+    ESP_ERROR_CHECK(ray_port_init(&port_cfg));
+
+    ray_port_display_cfg_t disp_cfg = {
+        .panel = panel_handle,
+        .io = io_handle,
+        .hres = 320,
+        .vres = 240,
+        .monochrome = false,
+        .dma_capable = true,
+    };
+
+    ESP_ERROR_CHECK(ray_port_add_display(&disp_cfg));
+
     ESP_LOGI(TAG, "Display initialized: 320x240");
     return ESP_OK;
 }
@@ -158,14 +257,21 @@ esp_err_t board_init_display(void)
         ESP_LOGE(TAG, "Failed to initialize BSP display");
         return ESP_FAIL;
     }
-    
+
+    ESP_LOGI(TAG, "BSP display initialized, waiting for DSI display to stabilize...");
+    vTaskDelay(pdMS_TO_TICKS(200));  // DSI displays need more time (200ms)
+
     // Initialize backlight control
     ret = bsp_display_brightness_init();
     if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "Turning on backlight...");
         ret = bsp_display_backlight_on();
         if (ret != ESP_OK) {
             ESP_LOGW(TAG, "Failed to turn on backlight: %d", ret);
             // Don't fail initialization if backlight fails
+        } else {
+            ESP_LOGI(TAG, "Waiting for backlight to fully turn on...");
+            vTaskDelay(pdMS_TO_TICKS(100));  // Wait 100ms for backlight
         }
     } else {
         ESP_LOGW(TAG, "Backlight initialization failed: %d", ret);
@@ -218,7 +324,7 @@ esp_err_t board_init_display(void)
 esp_err_t board_init_display(void)
 {
     ESP_LOGE(TAG, "No board selected! Please:");
-    ESP_LOGE(TAG, "1. Set CONFIG_BOARD_ESP_BOX_3 or CONFIG_BOARD_M5STACK_CORE_S3 in sdkconfig");
+    ESP_LOGE(TAG, "1. Set CONFIG_BOARD_ESP_BOX_3, CONFIG_BOARD_M5STACK_CORE_S3, CONFIG_BOARD_M5STACK_CORE2, or CONFIG_BOARD_ESP32_P4_FUNCTION_EV in sdkconfig");
     ESP_LOGE(TAG, "2. Or implement custom esp_lcd panel creation here");
     ESP_LOGE(TAG, "");
     ESP_LOGE(TAG, "Example for custom hardware:");
