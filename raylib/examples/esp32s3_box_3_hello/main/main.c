@@ -11,6 +11,7 @@
 #include "bsp/esp-bsp.h"
 #include "esp_log.h"
 #include "esp_err.h"
+#include "esp_lcd_panel_ops.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -22,13 +23,33 @@ static const char *TAG = "ESP32S3_BOX_3";
 static esp_lcd_panel_handle_t g_panel = NULL;
 static esp_lcd_panel_io_handle_t g_io = NULL;
 
+// Chunk size: 48 lines (matches BSP max_transfer_sz)
+#define CHUNK_LINES 48
+
 /**
- * @brief Display flush callback for rcore
+ * @brief Display flush callback for rcore - chunks framebuffer
  */
 static void display_flush(const uint16_t *buf, uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
-    if (g_panel && buf) {
-        esp_lcd_panel_draw_bitmap(g_panel, x, y, x + w, y + h, buf);
+    if (!g_panel || !buf) {
+        return;
+    }
+
+    // Flush in chunks (48 lines max) to match BSP max_transfer_sz
+    for (uint16_t row = 0; row < h; row += CHUNK_LINES) {
+        uint16_t chunk_height = (row + CHUNK_LINES > h) ? (h - row) : CHUNK_LINES;
+        const uint16_t *chunk_pixels = buf + (row * w);
+
+        esp_err_t ret = esp_lcd_panel_draw_bitmap(
+            g_panel,
+            x, y + row, x + w, y + row + chunk_height,
+            (void *)chunk_pixels
+        );
+
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to draw bitmap chunk at row %d: %s", row, esp_err_to_name(ret));
+            return;
+        }
     }
 }
 
@@ -66,8 +87,14 @@ static esp_err_t init_display(void)
         return ret;
     }
 
+    // Turn on display panel (required!)
+    esp_lcd_panel_disp_on_off(g_panel, true);
+
     // Turn on backlight
     bsp_display_backlight_on();
+
+    // Small delay for display to stabilize
+    vTaskDelay(pdMS_TO_TICKS(100));
 
     // Register display callbacks with rcore
     raylib_esp_set_display_callbacks(display_flush, display_get_dimensions);
