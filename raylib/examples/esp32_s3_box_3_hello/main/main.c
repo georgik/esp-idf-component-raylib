@@ -1,10 +1,11 @@
 /**
  * @file main.c
- * @brief ESP32-S3-BOX-3 Raylib example
+ * @brief Raylib example
  *
  * Architecture:
- * - BSP (esp-box-3_noglib) handles display hardware
- * - rcore callback interface connects raylib to BSP
+ * - BSP handles display hardware (for boards with BSP components)
+ * - Direct esp_lcd init for boards without BSP (e.g., esp32_s3_box)
+ * - rcore callback interface connects raylib to display
  * - No separate port layer needed
  */
 
@@ -40,11 +41,23 @@ static void display_flush(const uint16_t *buf, uint16_t x, uint16_t y, uint16_t 
         uint16_t chunk_height = (row + CHUNK_LINES > h) ? (h - row) : CHUNK_LINES;
         const uint16_t *chunk_pixels = buf + (row * w);
 
+        // Swap bytes for RGB565 (little-endian ESP32 to big-endian SPI LCD)
+        // Allocate temporary buffer for swapped bytes
+        uint16_t *swapped_buf = heap_caps_malloc(chunk_height * w * sizeof(uint16_t), MALLOC_CAP_DMA);
+        if (!swapped_buf) {
+            ESP_LOGE(TAG, "Failed to allocate swap buffer");
+            return;
+        }
+        for (int i = 0; i < chunk_height * w; i++) {
+            swapped_buf[i] = __builtin_bswap16(chunk_pixels[i]);
+        }
+
         esp_err_t ret = esp_lcd_panel_draw_bitmap(
             g_panel,
             x, y + row, x + w, y + row + chunk_height,
-            (void *)chunk_pixels
+            swapped_buf
         );
+        heap_caps_free(swapped_buf);
 
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "Failed to draw bitmap chunk at row %d: %s", row, esp_err_to_name(ret));
@@ -71,27 +84,12 @@ extern void raylib_esp_set_display_callbacks(
 #define RAYLIB_TASK_STACK_SIZE (128 * 1024)
 
 /**
- * @brief Initialize display using BSP
+ * @brief Initialize display using BSP (or direct esp_lcd for esp32_s3_box)
  */
 static esp_err_t init_display(void)
 {
-    ESP_LOGI(TAG, "Initializing ESP32-S3-BOX-3 display via BSP...");
+    ESP_LOGI(TAG, "Initializing display...");
 
-    bsp_display_config_t cfg = {
-        .max_transfer_sz = 320 * 48 * sizeof(uint16_t),  // 48-line chunks
-    };
-
-    esp_err_t ret = bsp_display_new(&cfg, &g_panel, &g_io);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "BSP display init failed: %s", esp_err_to_name(ret));
-        return ret;
-    }
-
-    // Turn on display panel (required!)
-    esp_lcd_panel_disp_on_off(g_panel, true);
-
-    // Turn on backlight
-    bsp_display_backlight_on();
 
     // Small delay for display to stabilize
     vTaskDelay(pdMS_TO_TICKS(100));
@@ -99,7 +97,9 @@ static esp_err_t init_display(void)
     // Register display callbacks with rcore
     raylib_esp_set_display_callbacks(display_flush, display_get_dimensions);
 
-    ESP_LOGI(TAG, "Display initialized: 320x240");
+    uint16_t w, h;
+    display_get_dimensions(&w, &h);
+    ESP_LOGI(TAG, "Display initialized: %dx%d", w, h);
     return ESP_OK;
 }
 
@@ -146,6 +146,7 @@ void raylib_task(void *pvParameter)
         DrawRectangle(x, 30, 50, 50, RED);
 
         const char *msg = "ESP32-S3-BOX-3";
+
         int sz = 20;
         int tw = MeasureText(msg, sz);
         DrawText(msg, (w - tw) / 2, (h - sz) / 2, sz, BLACK);
@@ -165,7 +166,7 @@ void raylib_task(void *pvParameter)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "ESP32-S3-BOX-3 Raylib Demo");
+    ESP_LOGI(TAG, "Raylib Demo");
 
     ESP_ERROR_CHECK(init_display());
 

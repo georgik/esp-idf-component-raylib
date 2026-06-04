@@ -1,0 +1,9 @@
+## IDF Component Manager Manifest File
+dependencies:
+  idf:
+    version: ">=5.5.0"
+  # Local raylib component - adjust path as needed
+  georgik/raylib:
+    version: "*"
+    override_path: "../../.."
+  # ESP32-S3-BOX uses deprecated BSP, ST7789 driver built into ESP-IDF 6

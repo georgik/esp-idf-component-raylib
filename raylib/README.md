@@ -140,6 +140,38 @@ ray_port_add_display(&disp);
 - Thread-safe operations
 - Performance statistics
 
+### Direct BSP Integration (No Port Layer)
+
+For simpler projects, you can integrate raylib directly with BSP using rcore callbacks, without the esp_raylib_port layer:
+
+**BSP Integration Cheatsheet**
+```c
+// Display Initialization
+bsp_display_new(&cfg, &panel, &io)              // Init BSP display panel + SPI
+bsp_display_backlight_on()                       // Enable backlight
+esp_lcd_panel_disp_on_off(panel, true)           // Power on display
+
+// rcore Callback Interface
+raylib_esp_set_display_callbacks(flush_fn, get_dim_fn)  // Register display callbacks
+
+// Callback Functions
+flush_fn(buf, x, y, w, h)                        // Send framebuffer to LCD (chunked)
+get_dim_fn(w, h)                                 // Return display dimensions
+
+// Key Constants
+320 * 48 * sizeof(uint16_t)                      // max_transfer_sz (48-line chunks)
+CHUNK_LINES 48                                   // Max lines per SPI transfer
+
+// Initialization Sequence
+bsp_display_new()                                // Create panel
+esp_lcd_panel_disp_on_off(panel, 1)             // Power on
+bsp_display_backlight_on()                      // Backlight
+vTaskDelay(100ms)                               // Stabilize
+raylib_esp_set_display_callbacks()              // Hook raylib
+```
+
+**Example:** See `examples/esp32s3_box_3_hello` for complete implementation using ESP-BOX-3 BSP directly.
+
 ### Color Mapping Implementation
 
 The framebuffer uses RGB565 format (5 bits red, 6 bits green, 5 bits blue). The implementation handles color format correctly through:

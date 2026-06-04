@@ -1,15 +1,10 @@
 ## IDF Component Manager Manifest File
-description: Raylib example for ESP32-S3-BOX-3 board
-license: Zlib
-version: 1.0.0
-
 dependencies:
   idf:
     version: ">=5.5.0"
-  # Local raylib component (override path)
+  # Local raylib component - adjust path as needed
   georgik/raylib:
     version: "*"
     override_path: "../../.."
-  # BSP from component registry
   espressif/esp-box-3_noglib:
     version: "*"
