@@ -17,6 +17,24 @@
 #include "freertos/semphr.h"
 
 //----------------------------------------------------------------------------------
+// POSIX stubs for embedded (weak symbols - overridden by ESP-IDF VFS when present)
+//----------------------------------------------------------------------------------
+
+// access() stub - always fail (no POSIX access control on ESP32)
+__attribute__((weak)) int access(const char *path, int mode) {
+    (void)path;
+    (void)mode;
+    return -1;
+}
+
+// mkdir() stub - always fail (use ESP-IDF VFS if needed)
+__attribute__((weak)) int mkdir(const char *path, unsigned int mode) {
+    (void)path;
+    (void)mode;
+    return -1;
+}
+
+//----------------------------------------------------------------------------------
 // Types and Structures
 //----------------------------------------------------------------------------------
 typedef struct {
