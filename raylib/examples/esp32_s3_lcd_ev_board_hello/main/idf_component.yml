@@ -7,6 +7,7 @@ dependencies:
   georgik/raylib:
     version: "*"
     override_path: "../../.."
-  # ESP32-S3-BOX uses deprecated BSP, ST7789 driver built into ESP-IDF 6
+  espressif/esp32_s3_lcd_ev_board:
+    version: "*"
   # New boards from esp-bsp (ESP32-S3 only)
   # P4 boards skipped - esp-generate doesn't support esp32p4 chip yet

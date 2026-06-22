@@ -21,7 +21,7 @@
 
 #include "raylib.h"
 
-static const char *TAG = "ESP32S3_BOX_3";
+static const char *TAG = "ESP32_S3_EYE";
 
 // Display handles from BSP
 static esp_lcd_panel_handle_t g_panel = NULL;
@@ -75,7 +75,7 @@ static void display_flush(const uint16_t *buf, uint16_t x, uint16_t y, uint16_t 
  */
 static void display_get_dimensions(uint16_t *w, uint16_t *h)
 {
-    if (w) *w = 320;
+    if (w) *w = 240;
     if (h) *h = 240;
 }
 
@@ -123,7 +123,7 @@ void raylib_task(void *pvParameter)
 
     uint16_t w, h;
     display_get_dimensions(&w, &h);
-    InitWindow(w, h, "ESP32-S3-BOX-3 Raylib");
+    InitWindow(w, h, "ESP32-S3-EYE Raylib");
 
     ESP_LOGI(TAG, "Starting demo loop...");
 
@@ -159,7 +159,7 @@ void raylib_task(void *pvParameter)
         int x = frame % w;
         DrawRectangle(x, 30, 50, 50, RED);
 
-        const char *msg = "ESP32-S3-BOX-3";
+        const char *msg = "ESP32-S3-EYE";
 
         int sz = 20;
         int tw = MeasureText(msg, sz);
