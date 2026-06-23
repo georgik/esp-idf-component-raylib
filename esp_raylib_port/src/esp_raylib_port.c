@@ -212,7 +212,7 @@ esp_err_t ray_port_flush_rgb565(const uint16_t* buf, uint16_t x, uint16_t y, uin
     size_t chunk_bytes = s_port.cfg.chunk_bytes;
     if (chunk_bytes == 0) {
         // Auto: max 48 lines per chunk (matches ESP-BSP pattern)
-        chunk_bytes = w * 48 * sizeof(uint16_t);
+        chunk_bytes = (size_t)w * 48 * sizeof(uint16_t);
     }
     
     int max_chunk_height = chunk_bytes / (w * sizeof(uint16_t));
@@ -223,8 +223,8 @@ esp_err_t ray_port_flush_rgb565(const uint16_t* buf, uint16_t x, uint16_t y, uin
     const uint16_t *flush_buf = buf;
     
     if (s_port.cfg.swap_rgb_bytes) {
-        size_t total_pixels = w * h;
-        swap_buf = malloc(total_pixels * sizeof(uint16_t));
+        size_t total_pixels = (size_t)w * (size_t)h;
+        swap_buf = calloc(total_pixels, sizeof(uint16_t));
         if (!swap_buf) {
             ESP_LOGE(TAG, "Failed to allocate swap buffer");
             return ESP_ERR_NO_MEM;
