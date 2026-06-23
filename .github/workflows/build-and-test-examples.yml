@@ -1,1 +1,131 @@
-# placeholder
+name: Build and Test Raylib Examples
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example:
+          - esp32s3/espressif-esp32-s3-box-3_hello
+          - esp32s3/espressif-esp32-s3-box_hello
+          - esp32s3/espressif-esp32-s3-eye_hello
+          - esp32s3/espressif-esp32-s3-korvo-2_hello
+          - esp32s3/espressif-esp32-s3-lcd-ev-board_hello
+          - esp32s3/espressif-esp-vocat_hello
+          - esp32s3/m5stack-atom-s3_hello
+          - esp32s3/m5stack-atom-s3r_hello
+          - esp32s3/m5stack-core-s3_hello
+          - esp32/m5stack-core-2_hello
+      fail-fast: false
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set ESP-IDF target
+        run: |
+          CHIP="${{ matrix.example }}"
+          if [[ "$CHIP" == esp32s3/* ]]; then
+            echo "TARGET=esp32s3" >> $GITHUB_ENV
+          elif [[ "$CHIP" == esp32/* ]]; then
+            echo "TARGET=esp32" >> $GITHUB_ENV
+          else
+            echo "Unknown target for: $CHIP"
+            exit 1
+          fi
+
+      - name: ESP-IDF build
+        uses: espressif/esp-idf-ci-action@v1.1.0
+        with:
+          esp_idf_version: latest
+          target: ${{ env.TARGET }}
+          path: '.'
+          command: |
+            cd raylib/examples/${{ matrix.example }}
+            idf.py build
+
+      - name: Merge binary
+        working-directory: raylib/examples/${{ matrix.example }}
+        run: |
+          cd build
+          esptool.py --chip ${{ env.TARGET }} merge_bin -o firmware.bin "@flash_args"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.example }}
+          path: raylib/examples/${{ matrix.example }}/build/firmware.bin
+          retention-days: 7
+
+  wokwi-test:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        board:
+          - esp32s3/espressif-esp32-s3-box-3_hello
+          - esp32s3/m5stack-core-s3_hello
+      fail-fast: false
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download firmware
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-${{ matrix.board }}
+          path: firmware
+
+      - name: Install wokwi-cli
+        run: |
+          curl -L https://wokwi.com/ci/install.sh | bash
+          echo "$HOME/.wokwi/bin" >> $GITHUB_PATH
+
+      - name: Run Wokwi simulation
+        run: |
+          EXAMPLE_NAME=$(basename ${{ matrix.board }})
+          BOARD_NAME=${EXAMPLE_NAME%_hello}
+          # Convert vendor-board format to wokwi board name
+          WOKWI_BOARD=$(echo "$BOARD_NAME" | sed 's/espressif-esp32-s3-box-3/esp-box-3/' | sed 's/m5stack-core-s3/m5stack-core-s3/')
+
+          wokwi-cli \
+            --timeout 5000 \
+            --timeout-exit-code 0 \
+            --screenshot-part "esp" \
+            --screenshot-time 4500 \
+            --elf "firmware/firmware.bin" \
+            --screenshot-file "screenshot-${BOARD_NAME}.png" \
+            --serial-log-file 'wokwi-log.txt' \
+            "raylib/examples/${{ matrix.board }}"
+        env:
+          WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
+
+      - name: Flip screenshot (Raylib coordinate system)
+        if: success()
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y imagemagick
+          EXAMPLE_NAME=$(basename ${{ matrix.board }})
+          BOARD_NAME=${EXAMPLE_NAME%_hello}
+          convert "screenshot-${BOARD_NAME}.png" -flip "screenshot-${BOARD_NAME}.png"
+
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: screenshot-${{ matrix.board }}
+          path: screenshot-*.png
+          retention-days: 7
+
+      - name: Upload Wokwi logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wokwi-logs-${{ matrix.board }}
+          path: wokwi-log.txt
+          retention-days: 7
