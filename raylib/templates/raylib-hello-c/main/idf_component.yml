@@ -6,7 +6,7 @@ dependencies:
   # Structure: raylib/examples/esp_board_hello/main/ -> raylib/ (up 3 levels)
   georgik/raylib:
     version: "*"
-    override_path: "../../.."
+    override_path: "../../../.."
   #IF option("esp32_s3_box_3")
   espressif/esp-box-3_noglib:
     version: "*"

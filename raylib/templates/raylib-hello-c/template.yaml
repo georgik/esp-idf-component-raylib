@@ -46,7 +46,3 @@ options:
         name: m5stack_core_2
         display_name: M5Stack-Core2 (320x240 ILI9342)
         chips: [esp32]
-      # P4 boards skipped - esp-generate doesn't support esp32p4 chip yet
-      # - esp32_p4_function_ev_board (1024x600 MIPI)
-      # - m5stack_tab5 (720x1280 ST7123 MIPI)
-      # - esp32_p4_eye (240x240 ST7789)
