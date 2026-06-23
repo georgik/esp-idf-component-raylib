@@ -208,19 +208,55 @@ Board examples are generated from a template using esp-generate. This ensures co
 **Regenerating examples:**
 ```bash
 cd raylib
-./scripts/regenerate-all.sh
+raylib-cli regenerate
 ```
 
-**Conditional compilation in template:**
+### Template Structure
+
+```
+templates/raylib-hello-c/
+├── template.yaml          # Board options and metadata (read by esp-generate)
+├── CMakeLists.txt         # Project build configuration with conditionals
+├── sdkconfig.defaults     # ESP-IDF configuration with target chip conditionals
+├── wokwi.toml             # Wokwi simulator configuration
+├── diagram.json           # Wokwi circuit diagram
+├── README.md              # Example documentation
+└── main/
+    ├── idf_component.yml  # Component dependencies (BSP components)
+    ├── main.c             # Main application with board-specific conditionals
+    └── README.md          # Component documentation
+```
+
+**Purpose of each file:**
+
+- **template.yaml**: Defines available board options, display names, and supported chips. Used by esp-generate to present choices and filter compatible options.
+
+- **CMakeLists.txt**: Build configuration with `idf_build_set_property(MINIMAL_BUILD ON)` to trim unused components. Project name defaults to `esp32s3_hello` but gets renamed during generation.
+
+- **sdkconfig.defaults**: ESP-IDF defaults including `CONFIG_IDF_TARGET` and PSRAM settings. Uses conditionals to set correct target chip per board.
+
+- **wokwi.toml**: Wokwi simulator configuration pointing to build outputs. Uses conditionals to set correct firmware/elf paths per target chip.
+
+- **diagram.json**: Wokwi circuit diagram defining the board, display, and connections.
+
+- **main/idf_component.yml**: Component dependencies including BSP components for supported boards.
+
+- **main/main.c**: Application code with conditional compilation for each board's display initialization, dimensions, and BSP/direct init paths.
+
+### Conditional Compilation Syntax
+
+esp-generate supports these directives:
 ```c
-//IF option("esp32_s3_box_3")
-    // Code for ESP32-S3-BOX-3
-//ELIF option("m5stack_core_s3")
-    // Code for M5Stack CoreS3
+//IF option("board_name")
+    // Code for this board only
+//ELIF option("other_board")
+    // Code for other board
 //ELSE
-    // Default code
+    // Default code for all other boards
 //ENDIF
 ```
+
+**Note:** No OR (`||`) or AND (`&&`) expressions are supported. Use separate ELIF blocks instead.
 
 ## Known Issues / TODO
 
