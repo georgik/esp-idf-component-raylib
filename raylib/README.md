@@ -58,18 +58,43 @@ esp_lcd (ESP-IDF display driver)
 
 ## Requirements
 
-- ESP-IDF 5.5 or later (tested with 6.0)
-- ESP32-S3, ESP32, or ESP32-P4 (PSRAM recommended)
+- ESP-IDF 5.5 or later (CI tests with v6.1)
+- ESP32-S3 or ESP32 with PSRAM (recommended)
 - Board Support Package (BSP) for supported boards
 
 ## Quick Start
 
-Each board has its own example directory:
+Board-specific examples are organized by chip:
 
+**ESP32-S3 boards:**
 ```bash
-cd examples/esp32_s3_box_3_hello
+cd raylib/examples/esp32s3/espressif-esp32-s3-box-3_hello
 idf.py set-target esp32s3
 idf.py build flash monitor
+```
+
+**ESP32 boards:**
+```bash
+cd raylib/examples/esp32/m5stack-core-2_hello
+idf.py set-target esp32
+idf.py build flash monitor
+```
+
+**Available examples:**
+```
+raylib/examples/
+├── esp32/
+│   └── m5stack-core-2_hello/
+└── esp32s3/
+    ├── espressif-esp32-s3-box-3_hello/
+    ├── espressif-esp32-s3-box_hello/
+    ├── espressif-esp32-s3-eye_hello/
+    ├── espressif-esp32-s3-korvo-2_hello/
+    ├── espressif-esp32-s3-lcd-ev-board_hello/
+    ├── espressif-esp-vocat_hello/
+    ├── m5stack-atom-s3_hello/
+    ├── m5stack-atom-s3r_hello/
+    └── m5stack-core-s3_hello/
 ```
 
 ## Component Structure
@@ -90,9 +115,12 @@ raylib/
 ├── scripts/                    # Utility scripts
 │   └── regenerate-all.sh      # Regenerate examples from template
 └── examples/                   # Generated board examples
-    ├── esp32_s3_box_3_hello/
-    ├── m5stack_core_s3_hello/
-    └── ...
+    ├── esp32/                  # ESP32 chip examples
+    │   └── m5stack-core-2_hello/
+    └── esp32s3/                # ESP32-S3 chip examples
+        ├── espressif-esp32-s3-box-3_hello/
+        ├── m5stack-core-s3_hello/
+        └── ...
 ```
 
 ## Configuration
@@ -203,13 +231,9 @@ framebuffer[i] = __builtin_bswap16(pixel);  // Little-endian to big-endian
 
 Board examples are generated from a template using esp-generate. This ensures consistent code structure across all boards.
 
-**Template location:** `templates/raylib-hello-c/`
+**Template location:** `raylib/templates/raylib-hello-c/`
 
-**Regenerating examples:**
-```bash
-cd raylib
-raylib-cli regenerate
-```
+**Note:** Template-based generation is used during development. Users can directly use pre-generated examples without needing to regenerate.
 
 ### Template Structure
 
@@ -257,6 +281,31 @@ esp-generate supports these directives:
 ```
 
 **Note:** No OR (`||`) or AND (`&&`) expressions are supported. Use separate ELIF blocks instead.
+
+## CI/CD
+
+This project includes GitHub Actions workflows for automated building and testing:
+
+**Workflow:** `.github/workflows/build-and-test-examples.yml`
+
+- **Manual trigger** with configurable ESP-IDF version (default: v6.1)
+- **Builds all 10 examples** in parallel using matrix strategy
+- **Uploads flash files** as artifacts (ZIP with bootloader, partition-table, app binary, flash_args)
+- **Wokwi tests** for ESP32-S3-BOX-3 and M5Stack CoreS3 (screenshot capture)
+
+**Running the workflow:**
+```bash
+# Default (ESP-IDF v6.1)
+gh workflow run build-and-test-examples.yml
+
+# Custom ESP-IDF version
+gh workflow run build-and-test-examples.yml -f esp_idf_version=release-v5.2
+```
+
+**Artifacts produced:**
+- `flash-files-{chip}-{board}_hello.zip` - All binaries for flashing
+- `flash-files-{chip}-{board}_hello-screenshot.png` - Wokwi screenshot
+- `flash-files-{chip}-{board}_hello-logs.txt` - Wokwi serial output
 
 ## Known Issues / TODO
 
