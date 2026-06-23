@@ -59,11 +59,8 @@ jobs:
           command: |
             cd raylib/examples/${{ matrix.example }}
             idf.py build
-
-      - name: Create flash files archive
-        working-directory: raylib/examples/${{ matrix.example }}/build
-        run: |
-          zip flash-files.zip *.bin flash_args
+            cd build
+            zip flash-files.zip *.bin flash_args
 
       - name: Upload flash files artifact
         uses: actions/upload-artifact@v4.6.2
