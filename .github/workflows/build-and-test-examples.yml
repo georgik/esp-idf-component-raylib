@@ -2,6 +2,17 @@ name: Build and Test Raylib Examples
 
 on:
   workflow_dispatch:
+    inputs:
+      esp_idf_version:
+        description: 'ESP-IDF version'
+        required: false
+        default: 'release-v6.1'
+        type: choice
+        options:
+          - 'release-v6.1'
+          - 'release-v5.2'
+          - 'release-v5.1'
+          - 'latest'
 
 jobs:
   build:
@@ -23,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           submodules: true
 
@@ -42,24 +53,26 @@ jobs:
       - name: ESP-IDF build
         uses: espressif/esp-idf-ci-action@v1.1.0
         with:
-          esp_idf_version: latest
+          esp_idf_version: ${{ inputs.esp_idf_version || 'release-v6.1' }}
           target: ${{ env.TARGET }}
           path: '.'
           command: |
             cd raylib/examples/${{ matrix.example }}
             idf.py build
+            cd build
+            zip flash-files.zip *.bin flash_args
 
-      - name: Merge binary
-        working-directory: raylib/examples/${{ matrix.example }}
+      - name: Sanitize artifact name
         run: |
-          cd build
-          esptool.py --chip ${{ env.TARGET }} merge_bin -o firmware.bin "@flash_args"
+          SAFE_NAME="${{ matrix.example }}"
+          ARTIFACT_NAME="flash-files-${SAFE_NAME//\//-}"
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload flash files artifact
+        uses: actions/upload-artifact@v4.6.2
         with:
-          name: firmware-${{ matrix.example }}
-          path: raylib/examples/${{ matrix.example }}/build/firmware.bin
+          name: ${{ env.artifact_name }}
+          path: raylib/examples/${{ matrix.example }}/build/flash-files.zip
           retention-days: 7
 
   wokwi-test:
@@ -74,13 +87,26 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
-      - name: Download firmware
-        uses: actions/download-artifact@v4
+      - name: Sanitize artifact name
+        run: |
+          SAFE_NAME="${{ matrix.board }}"
+          ARTIFACT_NAME="flash-files-${SAFE_NAME//\//-}"
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
+
+      - name: Download flash files
+        uses: actions/download-artifact@v4.3.6
         with:
-          name: firmware-${{ matrix.board }}
-          path: firmware
+          name: ${{ env.artifact_name }}
+          path: flash-files
+
+      - name: Extract app binary
+        run: |
+          unzip flash-files/flash-files.zip -d app-bin
+          # Find main app .bin (not bootloader or partition-table)
+          APP_BIN=$(ls app-bin/*.bin | grep -v -E '(bootloader|partition-table)' | head -1)
+          echo "APP_BIN=$APP_BIN" >> $GITHUB_ENV
 
       - name: Install wokwi-cli
         run: |
@@ -99,7 +125,7 @@ jobs:
             --timeout-exit-code 0 \
             --screenshot-part "esp" \
             --screenshot-time 4500 \
-            --elf "firmware/firmware.bin" \
+            --elf "${{ env.APP_BIN }}" \
             --screenshot-file "screenshot-${BOARD_NAME}.png" \
             --serial-log-file 'wokwi-log.txt' \
             "raylib/examples/${{ matrix.board }}"
@@ -115,17 +141,17 @@ jobs:
           convert "screenshot-${BOARD_NAME}.png" -flip "screenshot-${BOARD_NAME}.png"
 
       - name: Upload screenshot
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         if: success()
         with:
-          name: screenshot-${{ matrix.board }}
+          name: ${{ env.artifact_name }}-screenshot
           path: screenshot-*.png
           retention-days: 7
 
       - name: Upload Wokwi logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         if: always()
         with:
-          name: wokwi-logs-${{ matrix.board }}
+          name: ${{ env.artifact_name }}-logs
           path: wokwi-log.txt
           retention-days: 7

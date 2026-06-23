@@ -6,14 +6,14 @@ This component enables running raylib on ESP32 devices without GPU/OpenGL suppor
 
 ## Architecture
 
-This implementation uses a **port layer architecture** for board independence:
+This implementation uses a **direct BSP integration** approach where board-specific examples handle display initialization and register callbacks with raylib:
 
 ```
-Application (hello.c)
+Application (main.c)
     ↓
-board_init.c (creates panel via ESP-BSP)
+Display Init (BSP or direct esp_lcd)
     ↓
-esp_raylib_port (board-agnostic display API)
+rcore Callbacks (raylib_esp_set_display_callbacks)
     ↓
 raylib (rcore_esp_idf.c platform backend)
     ↓
@@ -21,59 +21,80 @@ esp_lcd (ESP-IDF display driver)
 ```
 
 **Key benefits:**
-- Stable API between raylib and display hardware
-- Deterministic builds (board selection via Kconfig)
-- Easy to add new boards (just implement board_init)
-- Supports both SPI (S3) and DSI (P4) panels
+- Simple callback interface for display integration
+- Template-based examples for consistency
+- BSP support for common boards
+- Direct esp_lcd init for boards without BSP
+- Supports both SPI and DSI panels
 
 ## Features
 
-- ✅ Software rendering (no OpenGL hardware required)
-- ✅ RGB565 framebuffer support for ESP LCD panels
-- ✅ PSRAM allocation for framebuffers (heap-based, not stack)
-- ✅ Automatic byte swapping for SPI panels
-- ✅ LCD synchronization with semaphores (SPI and DSI)
-- ✅ Dynamic display dimensions (queries from port)
-- ✅ Chunked transfers for SPI, direct for DSI
-- ✅ Compatible with esp-bsp noglib components
-- ✅ 2D graphics: shapes, textures, text rendering
+- Software rendering (no OpenGL hardware required)
+- RGB565 framebuffer support for ESP LCD panels
+- PSRAM allocation for framebuffers
+- Automatic byte swapping for SPI panels
+- LCD synchronization with semaphores
+- Dynamic display dimensions via callbacks
+- Chunked transfers for SPI panels
+- Compatible with esp-bsp noglib components
+- 2D graphics: shapes, textures, text rendering
 
 ## Supported Boards
 
-**Fully tested and verified:**
-- **ESP32-S3-BOX-3** (320x240 ILI9341, SPI) - ✅ Working
-- **M5Stack Core S3** (320x240 ILI9342C, SPI) - ✅ Working
-- **ESP32-P4 Function EV Board** (1024x600 EK79007, MIPI-DSI) - ✅ Working
+**Fully tested and working:**
 
-**Easy to add:** Any board with ESP-BSP noglib support. Just add to `board_init.c`.
+| Board | Display | Chip | Init Type |
+|-------|---------|------|-----------|
+| ESP32-S3-BOX-3 | 320x240 ILI9341 | ESP32-S3 | BSP |
+| ESP32-S3-LCD-EV | 480x480 GC9503 | ESP32-S3 | BSP |
+| ESP32-S3-Korvo-2 | 320x240 ILI9341 | ESP32-S3 | BSP |
+| ESP32-S3-BOX | 320x240 ST7789 | ESP32-S3 | Direct |
+| ESP-VoCat | 360x360 ST77916 | ESP32-S3 | BSP |
+| ESP32-S3-EYE | 240x240 ST7789 | ESP32-S3 | BSP |
+| M5Stack CoreS3 | 320x240 ILI9341 | ESP32-S3 | BSP |
+| M5Stack AtomS3 | 128x128 GC9A01 | ESP32-S3 | BSP |
+| M5Stack AtomS3R | 128x128 GC9107 | ESP32-S3 | Direct |
+| M5Stack Core2 | 320x240 ILI9342 | ESP32 | BSP |
 
 ## Requirements
 
-- ESP-IDF 5.5 or later (tested with latest master)
-- ESP32-S3 or similar with PSRAM (recommended for framebuffer)
-- Board Support Package (BSP) for your target board
-
-## Installation
-
-### Using ESP Component Registry (coming soon)
-```yaml
-dependencies:
-  georgik/raylib: "*"
-```
-
-### Local Development
-Clone this repository into your project's `components/` directory or use as a git submodule.
+- ESP-IDF 5.5 or later (CI tests with v6.1)
+- ESP32-S3 or ESP32 with PSRAM (recommended)
+- Board Support Package (BSP) for supported boards
 
 ## Quick Start
 
-See the [hello example](examples/hello/README.md) for a complete working application.
+Board-specific examples are organized by chip:
 
-### Building the Example
-
+**ESP32-S3 boards:**
 ```bash
-cd examples/hello
+cd raylib/examples/esp32s3/espressif-esp32-s3-box-3_hello
 idf.py set-target esp32s3
-idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp-box-3" reconfigure build flash monitor
+idf.py build flash monitor
+```
+
+**ESP32 boards:**
+```bash
+cd raylib/examples/esp32/m5stack-core-2_hello
+idf.py set-target esp32
+idf.py build flash monitor
+```
+
+**Available examples:**
+```
+raylib/examples/
+├── esp32/
+│   └── m5stack-core-2_hello/
+└── esp32s3/
+    ├── espressif-esp32-s3-box-3_hello/
+    ├── espressif-esp32-s3-box_hello/
+    ├── espressif-esp32-s3-eye_hello/
+    ├── espressif-esp32-s3-korvo-2_hello/
+    ├── espressif-esp32-s3-lcd-ev-board_hello/
+    ├── espressif-esp-vocat_hello/
+    ├── m5stack-atom-s3_hello/
+    ├── m5stack-atom-s3r_hello/
+    └── m5stack-core-s3_hello/
 ```
 
 ## Component Structure
@@ -81,99 +102,218 @@ idf.py -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.esp-box-3" re
 ```
 raylib/
 ├── CMakeLists.txt              # ESP-IDF component build configuration
-├── idf_component.yml           # Component metadata (depends on esp_raylib_port)
-├── include/                    # Wrapper headers (stubs, overrides)
+├── idf_component.yml           # Component metadata
+├── include/                    # Wrapper headers
 │   ├── dirent.h               # Stub for missing POSIX functions
-│   └── rlsw_esp_idf.h         # Software renderer config (PSRAM, RGB format)
+│   └── rlsw_esp_idf.h         # Software renderer config
 ├── src/
 │   └── platforms/
 │       └── rcore_esp_idf.c    # ESP-IDF platform backend
 ├── raylib/                     # Git submodule: official raylib
-│   └── raylib/                 # (upstream at master branch)
-└── examples/
-    └── hello/                  # Demo application
-        └── main/
-            ├── hello.c         # Application code
-            ├── board_init.c    # Board-specific init
-            ├── board_init.h
-            └── Kconfig.projbuild  # Board selection
+├── templates/                  # Example templates
+│   └── raylib-hello-c/         # Hello example template
+├── scripts/                    # Utility scripts
+│   └── regenerate-all.sh      # Regenerate examples from template
+└── examples/                   # Generated board examples
+    ├── esp32/                  # ESP32 chip examples
+    │   └── m5stack-core-2_hello/
+    └── esp32s3/                # ESP32-S3 chip examples
+        ├── espressif-esp32-s3-box-3_hello/
+        ├── m5stack-core-s3_hello/
+        └── ...
 ```
 
 ## Configuration
 
 The component is configured via CMake definitions in `CMakeLists.txt`:
 
-- `GRAPHICS_API_OPENGL_11_SOFTWARE` - Enable software renderer
+- `GRAPHICS_API_OPENGL_SOFTWARE` - Enable software renderer
 - `SW_COLOR_BUFFER_BITS=16` - RGB565 format
-- `SW_MALLOC` / `SW_FREE` - Allocate from PSRAM
+- `SW_FRAMEBUFFER_COLOR_TYPE=R5G6B5` - RGB565 pixel format
 - Disabled modules: raudio, rmodels, compression, automation
 
-## Port Layer API (`esp_raylib_port`)
+## Display Integration
 
-The port layer provides a stable, board-agnostic API:
+### BSP Integration (For Boards with BSP)
 
-**Initialization:**
+Use the Board Support Package for simple display initialization:
+
 ```c
-ray_port_cfg_t cfg = {
-    .buff_psram = true,
-    .swap_rgb_bytes = true,  // For SPI panels
-    .hres = 320,
-    .vres = 240,
-    .perf_stats = true,
+// Display Initialization
+bsp_display_config_t cfg = {
+    .max_transfer_sz = 320 * 48 * sizeof(uint16_t),
 };
-ray_port_init(&cfg);
+bsp_display_new(&cfg, &panel, &io);
+esp_lcd_panel_disp_on_off(panel, true);
+bsp_display_backlight_on();
 
-ray_port_display_cfg_t disp = {
-    .panel = panel_handle,
-    .io = io_handle,
-    .hres = 320,
-    .vres = 240,
-    .dma_capable = true,
-};
-ray_port_add_display(&disp);
+// Register callbacks with raylib
+raylib_esp_set_display_callbacks(display_flush, display_get_dimensions);
 ```
 
-**Key features:**
-- RGB565 framebuffer flushing with chunking
-- Automatic byte swapping for SPI panels
-- LCD synchronization via callbacks and semaphores
-- Thread-safe operations
-- Performance statistics
+### Direct esp_lcd Integration (For Boards without BSP)
 
-### Color Mapping Implementation
+For boards without BSP support, initialize display directly:
 
-The framebuffer uses RGB565 format (5 bits red, 6 bits green, 5 bits blue). The implementation handles color format correctly through:
+```c
+// SPI bus configuration
+spi_bus_config_t bus_cfg = {
+    .sclk_io_num = GPIO_NUM_15,
+    .mosi_io_num = GPIO_NUM_21,
+    .miso_io_num = GPIO_NUM_NC,
+    .max_transfer_sz = 128 * 128 * sizeof(uint16_t),
+};
+spi_bus_initialize(SPI3_HOST, &bus_cfg, SPI_DMA_CH_AUTO);
 
-1. **Direct Framebuffer Access**: Uses `swGetColorBuffer()` to access the software renderer's internal RGB565 buffer directly, avoiding lossy format conversions
-2. **Byte-Order Conversion**: SPI LCD panels (like ILI9341 on ESP32-S3-BOX-3) expect big-endian RGB565 format, so bytes are swapped before transmission:
-   ```c
-   framebuffer[i] = (pixel >> 8) | (pixel << 8);  // Little-endian to big-endian
-   ```
+// Panel IO configuration
+esp_lcd_panel_io_spi_config_t io_cfg = {
+    .cs_gpio_num = GPIO_NUM_14,
+    .dc_gpio_num = GPIO_NUM_42,
+    .spi_mode = 0,
+    .pclk_hz = 40 * 1000 * 1000,
+};
+esp_lcd_new_panel_io_spi(SPI3_HOST, &io_cfg, &io);
 
-**Important**: Earlier implementations used `rlCopyFramebuffer()` which performed RGB565 → RGBA8888 → RGB565 conversion, corrupting colors. The current implementation uses direct memory copy to preserve color accuracy.
+// Panel configuration
+esp_lcd_panel_dev_config_t panel_cfg = {
+    .reset_gpio_num = GPIO_NUM_48,
+    .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
+    .bits_per_pixel = 16,
+};
+esp_lcd_new_panel_gc9107(io, &panel_cfg, &panel);
+esp_lcd_panel_init(panel);
+esp_lcd_panel_disp_on_off(panel, true);
 
-## Known Issues / TODO
+// Register callbacks
+raylib_esp_set_display_callbacks(display_flush, display_get_dimensions);
+```
 
-- [x] ~~Color mapping~~ - Fixed: Automatic byte swapping per panel type
-- [x] ~~Display synchronization~~ - Fixed: Semaphore-based sync for SPI and DSI
-- [x] ~~Multi-board support~~ - Fixed: Board selection via Kconfig
-- [ ] Touch input API ready but not connected to raylib
-- [ ] Audio module disabled (no esp-idf audio backend)
-- [ ] 3D models disabled (requires filesystem APIs)
-- [ ] Performance: ~15-20 FPS on 320x240, slower on 1024x600
+### Callback Interface
 
-## Examples
+The `raylib_esp_set_display_callbacks` function registers two callbacks:
 
-- [hello](examples/hello/) - Basic shapes, text, animation
+**flush_fn**: Sends framebuffer to display
+```c
+void display_flush(const uint16_t *buf, uint16_t x, uint16_t y, uint16_t w, uint16_t h)
+{
+    // Send buf to display at (x, y) with size (w, h)
+    // Chunk into 48-line transfers for SPI panels
+    for (uint16_t row = 0; row < h; row += CHUNK_LINES) {
+        uint16_t chunk_height = (row + CHUNK_LINES > h) ? (h - row) : CHUNK_LINES;
+        esp_lcd_panel_draw_bitmap(panel, x, y + row, x + w, y + row + chunk_height, buf + (row * w));
+    }
+}
+```
+
+**get_dim_fn**: Returns display dimensions
+```c
+void display_get_dimensions(uint16_t *w, uint16_t *h)
+{
+    if (w) *w = 320;
+    if (h) *h = 240;
+}
+```
+
+### Important Constants
+
+- **max_transfer_sz**: `320 * 48 * sizeof(uint16_t)` for SPI panels (48-line chunks)
+- **CHUNK_LINES**: 48 - Max lines per SPI transfer (BSP limitation)
+- **Byte swapping**: Required for SPI panels (little-endian to big-endian)
+
+### Color Format
+
+The framebuffer uses RGB565 format. For SPI panels, bytes must be swapped:
+```c
+framebuffer[i] = __builtin_bswap16(pixel);  // Little-endian to big-endian
+```
+
+## Template System
+
+Board examples are generated from a template using esp-generate. This ensures consistent code structure across all boards.
+
+**Template location:** `raylib/templates/raylib-hello-c/`
+
+**Note:** Template-based generation is used during development. Users can directly use pre-generated examples without needing to regenerate.
+
+### Template Structure
+
+```
+templates/raylib-hello-c/
+├── template.yaml          # Board options and metadata (read by esp-generate)
+├── CMakeLists.txt         # Project build configuration with conditionals
+├── sdkconfig.defaults     # ESP-IDF configuration with target chip conditionals
+├── wokwi.toml             # Wokwi simulator configuration
+├── diagram.json           # Wokwi circuit diagram
+├── README.md              # Example documentation
+└── main/
+    ├── idf_component.yml  # Component dependencies (BSP components)
+    ├── main.c             # Main application with board-specific conditionals
+    └── README.md          # Component documentation
+```
+
+**Purpose of each file:**
+
+- **template.yaml**: Defines available board options, display names, and supported chips. Used by esp-generate to present choices and filter compatible options.
+
+- **CMakeLists.txt**: Build configuration with `idf_build_set_property(MINIMAL_BUILD ON)` to trim unused components. Project name defaults to `esp32s3_hello` but gets renamed during generation.
+
+- **sdkconfig.defaults**: ESP-IDF defaults including `CONFIG_IDF_TARGET` and PSRAM settings. Uses conditionals to set correct target chip per board.
+
+- **wokwi.toml**: Wokwi simulator configuration pointing to build outputs. Uses conditionals to set correct firmware/elf paths per target chip.
+
+- **diagram.json**: Wokwi circuit diagram defining the board, display, and connections.
+
+- **main/idf_component.yml**: Component dependencies including BSP components for supported boards.
+
+- **main/main.c**: Application code with conditional compilation for each board's display initialization, dimensions, and BSP/direct init paths.
+
+### Conditional Compilation Syntax
+
+esp-generate supports these directives:
+```c
+//IF option("board_name")
+    // Code for this board only
+//ELIF option("other_board")
+    // Code for other board
+//ELSE
+    // Default code for all other boards
+//ENDIF
+```
+
+**Note:** No OR (`||`) or AND (`&&`) expressions are supported. Use separate ELIF blocks instead.
 
 ## CI/CD
 
 This project includes GitHub Actions workflows for automated building and testing:
 
-- **Build**: Automatically builds examples for ESP32-S3-BOX-3, M5Stack Core S3, and ESP32-P4 Function EV Board
-- **Test**: Runs Wokwi simulations and captures screenshots
+**Workflow:** `.github/workflows/build-and-test-examples.yml`
 
-See [.github/README.md](.github/README.md) for detailed CI/CD documentation.
+- **Manual trigger** with configurable ESP-IDF version (default: v6.1)
+- **Builds all 10 examples** in parallel using matrix strategy
+- **Uploads flash files** as artifacts (ZIP with bootloader, partition-table, app binary, flash_args)
+- **Wokwi tests** for ESP32-S3-BOX-3 and M5Stack CoreS3 (screenshot capture)
+
+**Running the workflow:**
+```bash
+# Default (ESP-IDF v6.1)
+gh workflow run build-and-test-examples.yml
+
+# Custom ESP-IDF version
+gh workflow run build-and-test-examples.yml -f esp_idf_version=release-v5.2
+```
+
+**Artifacts produced:**
+- `flash-files-{chip}-{board}_hello.zip` - All binaries for flashing
+- `flash-files-{chip}-{board}_hello-screenshot.png` - Wokwi screenshot
+- `flash-files-{chip}-{board}_hello-logs.txt` - Wokwi serial output
+
+## Known Issues / TODO
+
+- Touch input API ready but not connected to raylib
+- Audio module disabled (no esp-idf audio backend)
+- 3D models disabled (requires filesystem APIs)
+- Performance: ~15-20 FPS on 320x240, slower on 1024x600
+- ESP32 chip target: esp-generate bug prevents generation (workaround: manual copy)
 
 ## Contributing
 
@@ -181,7 +321,6 @@ Contributions welcome! Especially:
 - Additional board support
 - Performance optimizations
 - Input handling (touch, buttons)
-- Color format fixes
 
 ## License
 

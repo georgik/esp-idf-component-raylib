@@ -1,9 +1,0 @@
-idf_component_register(
-    SRCS
-        "hello.c"
-        "board_init.c"
-    INCLUDE_DIRS "."
-    PRIV_REQUIRES
-        georgik__raylib
-        # esp_raylib_port is pulled in via georgik__raylib dependency
-)
