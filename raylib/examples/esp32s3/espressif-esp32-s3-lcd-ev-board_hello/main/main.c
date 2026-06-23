@@ -17,7 +17,7 @@
 #include "esp_err.h"
 #include "esp_lcd_panel_ops.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/Task.h"
+#include "freertos/task.h"
 #include "raylib.h"
 
 static const char *TAG = "ESP32_S3_LCD_EV";

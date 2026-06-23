@@ -22,7 +22,7 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/Task.h"
+#include "freertos/task.h"
 #include "raylib.h"
 //ELIF option("m5stack_atom_s3r")
 #include "esp_log.h"
@@ -34,7 +34,7 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/Task.h"
+#include "freertos/task.h"
 #include "raylib.h"
 //ELSE
 #include "bsp/esp-bsp.h"
@@ -42,7 +42,7 @@
 #include "esp_err.h"
 #include "esp_lcd_panel_ops.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/Task.h"
+#include "freertos/task.h"
 #include "raylib.h"
 //ENDIF
 

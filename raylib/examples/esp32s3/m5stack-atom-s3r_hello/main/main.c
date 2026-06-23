@@ -21,7 +21,7 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/Task.h"
+#include "freertos/task.h"
 #include "raylib.h"
 
 static const char *TAG = "M5STACK_ATOMS3R";
