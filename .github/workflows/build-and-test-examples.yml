@@ -62,10 +62,16 @@ jobs:
             cd build
             zip flash-files.zip *.bin flash_args
 
+      - name: Sanitize artifact name
+        run: |
+          SAFE_NAME="${{ matrix.example }}"
+          ARTIFACT_NAME="flash-files-${SAFE_NAME//\//-}"
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
+
       - name: Upload flash files artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: flash-files-${{ matrix.example }}
+          name: ${{ env.artifact_name }}
           path: raylib/examples/${{ matrix.example }}/build/flash-files.zip
           retention-days: 7
 
@@ -83,10 +89,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4.2.2
 
+      - name: Sanitize artifact name
+        run: |
+          SAFE_NAME="${{ matrix.board }}"
+          ARTIFACT_NAME="flash-files-${SAFE_NAME//\//-}"
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
+
       - name: Download flash files
         uses: actions/download-artifact@v4.3.6
         with:
-          name: flash-files-${{ matrix.board }}
+          name: ${{ env.artifact_name }}
           path: flash-files
 
       - name: Extract app binary
@@ -132,7 +144,7 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         if: success()
         with:
-          name: screenshot-${{ matrix.board }}
+          name: ${{ env.artifact_name }}-screenshot
           path: screenshot-*.png
           retention-days: 7
 
@@ -140,6 +152,6 @@ jobs:
         uses: actions/upload-artifact@v4.6.2
         if: always()
         with:
-          name: wokwi-logs-${{ matrix.board }}
+          name: ${{ env.artifact_name }}-logs
           path: wokwi-log.txt
           retention-days: 7
