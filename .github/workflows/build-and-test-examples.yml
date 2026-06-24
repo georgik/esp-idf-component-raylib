@@ -69,7 +69,7 @@ jobs:
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
 
       - name: Upload flash files artifact
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{ env.artifact_name }}
           path: raylib/examples/${{ matrix.example }}/build/flash-files.zip
@@ -96,7 +96,7 @@ jobs:
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
 
       - name: Download flash files
-        uses: actions/download-artifact@v4.3.6
+        uses: actions/download-artifact@v8.0.1
         with:
           name: ${{ env.artifact_name }}
           path: flash-files
