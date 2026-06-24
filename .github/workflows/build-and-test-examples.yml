@@ -82,7 +82,6 @@ jobs:
       matrix:
         board:
           - esp32s3/espressif-esp32-s3-box-3_hello
-          - esp32s3/espressif-esp32-s3-box_hello
           - esp32s3/espressif-esp32-s3-eye_hello
           - esp32s3/espressif-esp32-s3-korvo-2_hello
           - esp32s3/espressif-esp32-s3-lcd-ev-board_hello
