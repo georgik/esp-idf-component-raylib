@@ -82,7 +82,15 @@ jobs:
       matrix:
         board:
           - esp32s3/espressif-esp32-s3-box-3_hello
+          - esp32s3/espressif-esp32-s3-box_hello
+          - esp32s3/espressif-esp32-s3-eye_hello
+          - esp32s3/espressif-esp32-s3-korvo-2_hello
+          - esp32s3/espressif-esp32-s3-lcd-ev-board_hello
+          - esp32s3/espressif-esp-vocat_hello
+          - esp32s3/m5stack-atom-s3_hello
+          - esp32s3/m5stack-atom-s3r_hello
           - esp32s3/m5stack-core-s3_hello
+          - esp32/m5stack-core-2_hello
       fail-fast: false
 
     steps:
@@ -117,8 +125,6 @@ jobs:
         run: |
           EXAMPLE_NAME=$(basename ${{ matrix.board }})
           BOARD_NAME=${EXAMPLE_NAME%_hello}
-          # Convert vendor-board format to wokwi board name
-          WOKWI_BOARD=$(echo "$BOARD_NAME" | sed 's/espressif-esp32-s3-box-3/esp-box-3/' | sed 's/m5stack-core-s3/m5stack-core-s3/')
 
           wokwi-cli \
             --timeout 5000 \
@@ -141,7 +147,7 @@ jobs:
           convert "screenshot-${BOARD_NAME}.png" -flip "screenshot-${BOARD_NAME}.png"
 
       - name: Upload screenshot
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.1
         if: success()
         with:
           name: ${{ env.artifact_name }}-screenshot
@@ -149,7 +155,7 @@ jobs:
           retention-days: 7
 
       - name: Upload Wokwi logs
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
           name: ${{ env.artifact_name }}-logs
