@@ -6,7 +6,8 @@
   "parts": [
     {
       "type": "board-esp32-s3-box-3",
-      "id": "esp"
+      "id": "esp",
+      "attrs": { "psramSize": "16", "flashSize": "16" }
     }
   ],
   "connections": [
@@ -54,7 +55,8 @@
   "parts": [
     {
       "type": "board-esp32-s3-devkitc-1",
-      "id": "esp"
+      "id": "esp",
+      "attrs": { "psramSize": "8", "flashSize": "8" }
     }
   ],
   "connections": [
@@ -100,7 +102,7 @@
   "author": "Wokwi",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-m5stack-core-s3", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "board-m5stack-core-s3", "id": "esp", "top": 0, "left": 0, "attrs": { "psramSize": "16", "flashSize": "16" } },
     {
       "type": "wokwi-lcd1602",
       "id": "aw9523-workaround",
