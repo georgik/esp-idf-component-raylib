@@ -6,7 +6,19 @@ This component enables running raylib on ESP32 microcontrollers using the **CPU-
 
 ## Architecture
 
-This implementation uses a **port layer** that separates display hardware management from the raylib rendering engine:
+This implementation uses a **direct callback approach** where board-specific examples handle display initialization and register callbacks with raylib:
+
+```
+Application (main.c)
+    ↓
+Display Init (BSP or direct esp_lcd)
+    ↓
+rcore Callbacks (raylib_esp_set_display_callbacks)
+    ↓
+raylib (rcore_esp_idf.c platform backend)
+    ↓
+esp_lcd (ESP-IDF display driver)
+```
 
 - **Board-specific examples**: Each board has a dedicated example in `raylib/examples/`
 - **Template-based generation**: Examples are generated from a single template using esp-generate
@@ -49,7 +61,7 @@ git clone --recurse-submodules https://github.com/georgik/esp-idf-component-rayl
 cd esp-idf-component-raylib
 
 # Navigate to an example (e.g., ESP32-S3-BOX-3)
-cd raylib/examples/esp32_s3_box_3_hello
+cd raylib/examples/esp32s3/espressif-esp32-s3-box-3_hello
 
 # Set your target chip
 idf.py set-target esp32s3
@@ -63,20 +75,27 @@ idf.py -p /dev/ttyUSB0 flash monitor
 
 ### Available Examples
 
-Board-specific examples are located in `raylib/examples/`:
+Board-specific examples are organized by chip:
 
-| Board | Example Directory | Display | Chip |
-|-------|------------------|---------|------|
-| ESP32-S3-BOX-3 | `esp32_s3_box_3_hello/` | 320x240 ILI9341 | ESP32-S3 |
-| ESP32-S3-LCD-EV | `esp32_s3_lcd_ev_board_hello/` | 480x480 GC9503 | ESP32-S3 |
-| ESP32-S3-Korvo-2 | `esp32s3_korvo_2_hello/` | 320x240 ILI9341 | ESP32-S3 |
-| ESP32-S3-BOX | `esp32_s3_box_hello/` | 320x240 ST7789 | ESP32-S3 |
-| ESP-VoCat | `esp_vocat_hello/` | 360x360 ST77916 | ESP32-S3 |
-| ESP32-S3-EYE | `esp32_s3_eye_hello/` | 240x240 ST7789 | ESP32-S3 |
-| M5Stack CoreS3 | `m5stack_core_s3_hello/` | 320x240 ILI9341 | ESP32-S3 |
-| M5Stack AtomS3 | `m5stack_atom_s3_hello/` | 128x128 GC9A01 | ESP32-S3 |
-| M5Stack AtomS3R | `m5stack_atom_s3r_hello/` | 128x128 GC9107 | ESP32-S3 |
-| M5Stack Core2 | `m5stack_core_2_hello/` | 320x240 ILI9342 | ESP32 |
+**ESP32-S3 boards:**
+```
+raylib/examples/esp32s3/
+├── espressif-esp32-s3-box-3_hello/        # 320x240 ILI9341
+├── espressif-esp32-s3-box_hello/          # 320x240 ST7789
+├── espressif-esp32-s3-eye_hello/          # 240x240 ST7789
+├── espressif-esp32-s3-korvo-2_hello/      # 320x240 ILI9341
+├── espressif-esp32-s3-lcd-ev-board_hello/ # 480x480 GC9503
+├── espressif-esp-vocat_hello/             # 360x360 ST77916
+├── m5stack-atom-s3_hello/                 # 128x128 GC9A01
+├── m5stack-atom-s3r_hello/                # 128x128 GC9107
+└── m5stack-core-s3_hello/                 # 320x240 ILI9341
+```
+
+**ESP32 boards:**
+```
+raylib/examples/esp32/
+└── m5stack-core-2_hello/                  # 320x240 ILI9342
+```
 
 ### How It Works
 
@@ -220,12 +239,12 @@ esp-idf-component-raylib/
 │   ├── scripts/               # Utility scripts
 │   │   └── regenerate-all.sh  # Regenerate examples
 │   └── examples/              # Generated board examples
-│       ├── esp32_s3_box_3_hello/
-│       ├── m5stack_core_s3_hello/
-│       └── ...
-└── esp_raylib_port/           # Port layer component
-    ├── idf_component.yml
-    └── src/                   # Board-agnostic display API
+│       ├── esp32/             # ESP32 chip examples
+│       │   └── m5stack-core-2_hello/
+│       └── esp32s3/           # ESP32-S3 chip examples
+│           ├── espressif-esp32-s3-box-3_hello/
+│           ├── m5stack-core-s3_hello/
+│           └── ...
 ```
 
 ## Documentation

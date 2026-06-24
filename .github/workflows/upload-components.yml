@@ -7,10 +7,6 @@ on:
         description: 'Raylib Version (leave empty to use version from idf_component.yml)'
         required: false
         type: string
-      port_version:
-        description: 'ESP Raylib Port Version (leave empty to use version from idf_component.yml)'
-        required: false
-        type: string
   push:
     tags:
       - 'v*'
@@ -29,18 +25,15 @@ jobs:
       - name: Set versions from various sources
         id: set_version
         run: |
-          # Read versions from idf_component.yml files as the primary source
+          # Read version from idf_component.yml as the primary source
           RAYLIB_YML_VERSION=$(grep '^version:' raylib/idf_component.yml | awk '{print $2}')
-          PORT_YML_VERSION=$(grep '^version:' esp_raylib_port/idf_component.yml | awk '{print $2}')
-          
+
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             # Use git tag version if available
             VERSION=${GITHUB_REF#refs/tags/v}
             RAYLIB_VERSION="${VERSION}~0"
-            PORT_VERSION="${PORT_YML_VERSION}"  # Keep port at current version
             echo "Using version from git tag: $VERSION"
             echo "raylib_version=$RAYLIB_VERSION" >> $GITHUB_OUTPUT
-            echo "port_version=$PORT_VERSION" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             # Use manual input if provided, otherwise use yml version
             if [[ -n "${{ github.event.inputs.raylib_version }}" ]]; then
@@ -50,68 +43,35 @@ jobs:
               echo "Using raylib version from idf_component.yml: $RAYLIB_YML_VERSION"
               echo "raylib_version=$RAYLIB_YML_VERSION" >> $GITHUB_OUTPUT
             fi
-            
-            if [[ -n "${{ github.event.inputs.port_version }}" ]]; then
-              echo "Using port version from manual input: ${{ github.event.inputs.port_version }}"
-              echo "port_version=${{ github.event.inputs.port_version }}" >> $GITHUB_OUTPUT
-            else
-              echo "Using port version from idf_component.yml: $PORT_YML_VERSION"
-              echo "port_version=$PORT_YML_VERSION" >> $GITHUB_OUTPUT
-            fi
           else
-            # Use versions from idf_component.yml as default
+            # Use version from idf_component.yml as default
             echo "Using raylib version from idf_component.yml: $RAYLIB_YML_VERSION"
-            echo "Using port version from idf_component.yml: $PORT_YML_VERSION"
             echo "raylib_version=$RAYLIB_YML_VERSION" >> $GITHUB_OUTPUT
-            echo "port_version=$PORT_YML_VERSION" >> $GITHUB_OUTPUT
           fi
-          
-      - name: Update component versions in yml if needed
+
+
+      - name: Update component version in yml if needed
         run: |
           # Update raylib version if different
           CURRENT_RAYLIB=$(grep '^version:' raylib/idf_component.yml | awk '{print $2}')
           TARGET_RAYLIB="${{ steps.set_version.outputs.raylib_version }}"
-          
+
           if [[ "$CURRENT_RAYLIB" != "$TARGET_RAYLIB" ]]; then
             echo "Updating raylib version from $CURRENT_RAYLIB to $TARGET_RAYLIB"
             sed -i "s/^version:.*/version: $TARGET_RAYLIB/" raylib/idf_component.yml
           else
             echo "Raylib version already matches: $TARGET_RAYLIB"
           fi
-          
-          # Update port version if different
-          CURRENT_PORT=$(grep '^version:' esp_raylib_port/idf_component.yml | awk '{print $2}')
-          TARGET_PORT="${{ steps.set_version.outputs.port_version }}"
-          
-          if [[ "$CURRENT_PORT" != "$TARGET_PORT" ]]; then
-            echo "Updating port version from $CURRENT_PORT to $TARGET_PORT"
-            sed -i "s/^version:.*/version: $TARGET_PORT/" esp_raylib_port/idf_component.yml
-          else
-            echo "Port version already matches: $TARGET_PORT"
-          fi
-          
+
+
       - name: Display component info
         run: |
-          echo "=== ESP Raylib Port ==="
-          echo "Namespace: georgik"
-          echo "Version: ${{ steps.set_version.outputs.port_version }}"
-          echo "---"
-          cat esp_raylib_port/idf_component.yml
-          echo ""
           echo "=== Raylib ==="
           echo "Namespace: georgik"
           echo "Version: ${{ steps.set_version.outputs.raylib_version }}"
           echo "---"
           cat raylib/idf_component.yml
-          
-      - name: Upload esp_raylib_port to ESP Component Registry
-        uses: espressif/upload-components-ci-action@v1
-        with:
-          name: "esp_raylib_port"
-          namespace: "georgik"
-          directories: "esp_raylib_port"
-          api_token: ${{ secrets.IDF_COMPONENT_API_TOKEN }}
-          
+
       - name: Upload raylib to ESP Component Registry
         uses: espressif/upload-components-ci-action@v1
         with:
@@ -124,9 +84,6 @@ jobs:
         if: success()
         run: |
           echo "✅ Successfully uploaded components to ESP Component Registry!"
-          echo ""
-          echo "📦 esp_raylib_port v${{ steps.set_version.outputs.port_version }}"
-          echo "   https://components.espressif.com/components/georgik/esp_raylib_port"
           echo ""
           echo "📦 raylib v${{ steps.set_version.outputs.raylib_version }}"
           echo "   https://components.espressif.com/components/georgik/raylib"

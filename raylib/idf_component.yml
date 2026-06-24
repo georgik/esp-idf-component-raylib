@@ -11,13 +11,18 @@ files:
     - "raylib/.git*"           # Exclude git metadata
 
 dependencies:
-  georgik/esp_raylib_port:
-    version: "^1.0.0"
-  espressif/esp_lcd_touch_tt21100: "*"
   ## Required IDF version
   idf:
     version: ">=5.5.0"
 
 examples:
-  - path: ./examples/hello
-  - path: ./examples/boards/esp32s3_box_3
+  - path: ./examples/esp32s3/espressif-esp32-s3-box-3_hello
+  - path: ./examples/esp32s3/espressif-esp32-s3-box_hello
+  - path: ./examples/esp32s3/espressif-esp32-s3-eye_hello
+  - path: ./examples/esp32s3/espressif-esp32-s3-korvo-2_hello
+  - path: ./examples/esp32s3/espressif-esp32-s3-lcd-ev-board_hello
+  - path: ./examples/esp32s3/espressif-esp-vocat_hello
+  - path: ./examples/esp32s3/m5stack-atom-s3_hello
+  - path: ./examples/esp32s3/m5stack-atom-s3r_hello
+  - path: ./examples/esp32s3/m5stack-core-s3_hello
+  - path: ./examples/esp32/m5stack-core-2_hello
