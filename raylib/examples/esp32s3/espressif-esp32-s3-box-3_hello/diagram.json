@@ -5,7 +5,8 @@
   "parts": [
     {
       "type": "board-esp32-s3-box-3",
-      "id": "esp"
+      "id": "esp",
+      "attrs": { "psramSize": "16", "flashSize": "16" }
     }
   ],
   "connections": [
