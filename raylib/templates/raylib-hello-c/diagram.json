@@ -38,13 +38,13 @@
   "editor": "wokwi",
   "parts": [
     {
-      "type": "board-esp32-s3-devkitc-1",
+      "type": "board-esp32-s3-korvo-2",
       "id": "esp"
     }
   ],
   "connections": [
-    ["esp:G43", "$serialMonitor:RX", ""],
-    ["esp:G44", "$serialMonitor:TX", ""]
+    ["esp:TX", "$serialMonitor:RX", ""],
+    ["esp:RX", "$serialMonitor:TX", ""]
   ]
 }
 //ELIF option("esp32_s3_box")
@@ -71,13 +71,13 @@
   "editor": "wokwi",
   "parts": [
     {
-      "type": "board-esp32-s3-devkitc-1",
+      "type": "board-esp-vocat",
       "id": "esp"
     }
   ],
   "connections": [
-    ["esp:G43", "$serialMonitor:RX", ""],
-    ["esp:G44", "$serialMonitor:TX", ""]
+    ["esp:TX", "$serialMonitor:RX", ""],
+    ["esp:RX", "$serialMonitor:TX", ""]
   ]
 }
 //ELIF option("esp32_s3_eye")
@@ -87,13 +87,13 @@
   "editor": "wokwi",
   "parts": [
     {
-      "type": "board-esp32-s3-devkitc-1",
+      "type": "board-esp32-s3-eye",
       "id": "esp"
     }
   ],
   "connections": [
-    ["esp:G43", "$serialMonitor:RX", ""],
-    ["esp:G44", "$serialMonitor:TX", ""]
+    ["esp:TX", "$serialMonitor:RX", ""],
+    ["esp:RX", "$serialMonitor:TX", ""]
   ]
 }
 //ELIF option("m5stack_core_s3")
@@ -134,13 +134,13 @@
   "editor": "wokwi",
   "parts": [
     {
-      "type": "board-esp32-s3-devkitc-1",
+      "type": "board-m5stack-atom-s3",
       "id": "esp"
     }
   ],
   "connections": [
-    ["esp:G43", "$serialMonitor:RX", ""],
-    ["esp:G44", "$serialMonitor:TX", ""]
+    ["esp:TX", "$serialMonitor:RX", ""],
+    ["esp:RX", "$serialMonitor:TX", ""]
   ]
 }
 //ELIF option("m5stack_atom_s3r")
@@ -150,13 +150,13 @@
   "editor": "wokwi",
   "parts": [
     {
-      "type": "board-esp32-s3-devkitc-1",
+      "type": "board-m5stack-atom-s3r",
       "id": "esp"
     }
   ],
   "connections": [
-    ["esp:G43", "$serialMonitor:RX", ""],
-    ["esp:G44", "$serialMonitor:TX", ""]
+    ["esp:TX", "$serialMonitor:RX", ""],
+    ["esp:RX", "$serialMonitor:TX", ""]
   ]
 }
 //ELIF option("m5stack_core_2")
@@ -166,7 +166,7 @@
   "editor": "wokwi",
   "parts": [
     {
-      "type": "board-esp32-devkit-c-v4",
+      "type": "board-m5stack-core2",
       "id": "esp"
     }
   ],

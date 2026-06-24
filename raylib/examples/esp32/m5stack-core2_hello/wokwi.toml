@@ -7,4 +7,4 @@
 version = 1
 
 firmware = 'build/flasher_args.json'
-elf = 'build/hello.elf'
+elf = 'build/esp32_hello.elf'
