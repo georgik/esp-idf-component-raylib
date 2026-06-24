@@ -117,15 +117,22 @@ jobs:
 
       - name: Install wokwi-cli
         run: |
-          curl -L https://wokwi.com/ci/install.sh | bash
-          echo "$HOME/.wokwi/bin" >> $GITHUB_PATH
+          # Download custom wokwi-cli with --boards-url support
+          curl -L https://georgik.rocks/wp-content/html5/wokwi/wokwi-cli-linuxstatic-x64.xz -o wokwi-cli.xz
+          xz -d -k -f wokwi-cli.xz
+          chmod +x wokwi-cli
+          echo "$GITHUB_WORKSPACE" >> $GITHUB_PATH
+
+          # Official wokwi-cli (commented out - use after custom boards merged upstream)
+          # curl -L https://wokwi.com/ci/install.sh | bash
+          # echo "$HOME/.wokwi/bin" >> $GITHUB_PATH
 
       - name: Run Wokwi simulation
         run: |
           EXAMPLE_NAME=$(basename ${{ matrix.board }})
           BOARD_NAME=${EXAMPLE_NAME%_hello}
 
-          wokwi-cli \
+          ./wokwi-cli \
             --timeout 5000 \
             --timeout-exit-code 0 \
             --screenshot-part "esp" \
@@ -133,7 +140,19 @@ jobs:
             --elf "${{ env.APP_BIN }}" \
             --screenshot-file "screenshot-${BOARD_NAME}.png" \
             --serial-log-file 'wokwi-log.txt' \
+            --boards-url "https://georgik.rocks/wp-content/html5/wokwi/boards.json" \
             "raylib/examples/${{ matrix.board }}"
+
+          # Original command (commented out - use after custom boards merged upstream)
+          # wokwi-cli \
+          #   --timeout 5000 \
+          #   --timeout-exit-code 0 \
+          #   --screenshot-part "esp" \
+          #   --screenshot-time 4500 \
+          #   --elf "${{ env.APP_BIN }}" \
+          #   --screenshot-file "screenshot-${BOARD_NAME}.png" \
+          #   --serial-log-file 'wokwi-log.txt' \
+          #   "raylib/examples/${{ matrix.board }}"
         env:
           WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
 
