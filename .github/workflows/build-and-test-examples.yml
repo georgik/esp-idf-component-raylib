@@ -29,7 +29,7 @@ jobs:
           - esp32s3/m5stack-atom-s3_hello
           - esp32s3/m5stack-atom-s3r_hello
           - esp32s3/m5stack-core-s3_hello
-          - esp32/m5stack-core-2_hello
+          - esp32/m5stack-core2_hello
       fail-fast: false
 
     steps:
@@ -90,7 +90,7 @@ jobs:
           - esp32s3/m5stack-atom-s3_hello
           - esp32s3/m5stack-atom-s3r_hello
           - esp32s3/m5stack-core-s3_hello
-          - esp32/m5stack-core-2_hello
+          - esp32/m5stack-core2_hello
       fail-fast: false
 
     steps:

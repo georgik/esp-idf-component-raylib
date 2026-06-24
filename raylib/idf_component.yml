@@ -25,4 +25,4 @@ examples:
   - path: ./examples/esp32s3/m5stack-atom-s3_hello
   - path: ./examples/esp32s3/m5stack-atom-s3r_hello
   - path: ./examples/esp32s3/m5stack-core-s3_hello
-  - path: ./examples/esp32/m5stack-core-2_hello
+  - path: ./examples/esp32/m5stack-core2_hello

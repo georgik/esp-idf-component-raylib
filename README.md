@@ -94,7 +94,7 @@ raylib/examples/esp32s3/
 **ESP32 boards:**
 ```
 raylib/examples/esp32/
-└── m5stack-core-2_hello/                  # 320x240 ILI9342
+└── m5stack-core2_hello/                  # 320x240 ILI9342
 ```
 
 ### How It Works
@@ -240,7 +240,7 @@ esp-idf-component-raylib/
 │   │   └── regenerate-all.sh  # Regenerate examples
 │   └── examples/              # Generated board examples
 │       ├── esp32/             # ESP32 chip examples
-│       │   └── m5stack-core-2_hello/
+│       │   └── m5stack-core2_hello/
 │       └── esp32s3/           # ESP32-S3 chip examples
 │           ├── espressif-esp32-s3-box-3_hello/
 │           ├── m5stack-core-s3_hello/

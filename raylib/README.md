@@ -75,7 +75,7 @@ idf.py build flash monitor
 
 **ESP32 boards:**
 ```bash
-cd raylib/examples/esp32/m5stack-core-2_hello
+cd raylib/examples/esp32/m5stack-core2_hello
 idf.py set-target esp32
 idf.py build flash monitor
 ```
@@ -84,7 +84,7 @@ idf.py build flash monitor
 ```
 raylib/examples/
 ├── esp32/
-│   └── m5stack-core-2_hello/
+│   └── m5stack-core2_hello/
 └── esp32s3/
     ├── espressif-esp32-s3-box-3_hello/
     ├── espressif-esp32-s3-box_hello/
@@ -116,7 +116,7 @@ raylib/
 │   └── regenerate-all.sh      # Regenerate examples from template
 └── examples/                   # Generated board examples
     ├── esp32/                  # ESP32 chip examples
-    │   └── m5stack-core-2_hello/
+    │   └── m5stack-core2_hello/
     └── esp32s3/                # ESP32-S3 chip examples
         ├── espressif-esp32-s3-box-3_hello/
         ├── m5stack-core-s3_hello/
