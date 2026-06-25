@@ -135,34 +135,15 @@ jobs:
           ./wokwi-cli \
             --timeout 5000 \
             --timeout-exit-code 0 \
-            --screenshot-part "lcd1" \
+            --screenshot-part "esp" \
             --screenshot-time 4500 \
             --elf "${{ env.APP_BIN }}" \
             --screenshot-file "screenshot-${BOARD_NAME}.png" \
             --serial-log-file 'wokwi-log.txt' \
             --boards-url "https://georgik.rocks/wp-content/html5/wokwi/boards.json" \
             "raylib/examples/${{ matrix.board }}"
-
-          # Original command (commented out - use after custom boards merged upstream)
-          # wokwi-cli \
-          #   --timeout 5000 \
-          #   --timeout-exit-code 0 \
-          #   --screenshot-part "esp" \
-          #   --screenshot-time 4500 \
-          #   --elf "${{ env.APP_BIN }}" \
-          #   --screenshot-file "screenshot-${BOARD_NAME}.png" \
-          #   --serial-log-file 'wokwi-log.txt' \
-          #   "raylib/examples/${{ matrix.board }}"
         env:
           WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
-
-      - name: Flip screenshot (Raylib coordinate system)
-        if: success()
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y imagemagick
-          EXAMPLE_NAME=$(basename ${{ matrix.board }})
-          BOARD_NAME=${EXAMPLE_NAME%_hello}
-          convert "screenshot-${BOARD_NAME}.png" -flip "screenshot-${BOARD_NAME}.png"
 
       - name: Upload screenshot
         uses: actions/upload-artifact@v7.0.1
