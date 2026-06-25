@@ -135,7 +135,7 @@ jobs:
           ./wokwi-cli \
             --timeout 5000 \
             --timeout-exit-code 0 \
-            --screenshot-part "esp" \
+            --screenshot-part "lcd1" \
             --screenshot-time 4500 \
             --elf "${{ env.APP_BIN }}" \
             --screenshot-file "screenshot-${BOARD_NAME}.png" \
