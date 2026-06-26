@@ -4,6 +4,8 @@ ESP-IDF wrapper component for [raylib](https://www.raylib.com/) - a simple and e
 
 This component enables running raylib on ESP32 microcontrollers using the **CPU-based software renderer** (no GPU required), making it possible to create graphics applications on embedded devices with LCD displays.
 
+**[Component Registry](https://components.espressif.com/components/georgik/raylib)** - Available via ESP Component Manager (`idf.py add-component`)
+
 ## Architecture
 
 This implementation uses a **direct callback approach** where board-specific examples handle display initialization and register callbacks with raylib:

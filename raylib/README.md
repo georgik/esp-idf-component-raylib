@@ -4,6 +4,8 @@ ESP-IDF component wrapper for [raylib](https://www.raylib.com/) using the **soft
 
 This component enables running raylib on ESP32 devices without GPU/OpenGL support by using the CPU-based software renderer merged in [raylib PR #4832](https://github.com/raysan5/raylib/pull/4832).
 
+**[Component Registry](https://components.espressif.com/components/georgik/raylib)** - Available via ESP Component Manager (`idf.py add-component`)
+
 ## Architecture
 
 This implementation uses a **direct BSP integration** approach where board-specific examples handle display initialization and register callbacks with raylib:
