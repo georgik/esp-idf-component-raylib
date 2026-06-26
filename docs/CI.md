@@ -10,12 +10,13 @@ The project uses GitHub Actions for continuous integration with the following wo
   - Builds all examples using ESP-IDF CI action
   - Runs Wokwi simulation tests
   - Captures screenshots for supported boards
-  - Uploads test artifacts (logs, screenshots)
+  - Uploads test artifacts (screenshots)
 
-- **Screenshot Gallery** (`.github/workflows/screenshot-gallery.yml`)
+- **Deploy to GitHub Pages** (`.github/workflows/deploy-pages.yml`)
   - Runs after test workflow completes
   - Generates HTML gallery from test artifacts
-  - Deploys to GitHub Pages
+  - Deploys combined site (launchpad + gallery) to GitHub Pages
+  - Also handles launchpad deployment on releases
 
 ## Supported Boards
 
@@ -38,7 +39,7 @@ All examples are built and tested in CI. However, screenshot capture is only ava
 | ESP32-S3-EYE | 240x240 ST7789 | Simulation only | Custom board SVG not accessible to server |
 | ESP32-S3-LCD-EV | 480x480 GC9503 | Simulation only | Custom board SVG not accessible to server |
 | M5Stack Atom S3 | 128x128 GC9A01 | Simulation only | Small display, custom board |
-| M5Stack Atom S3R | 128x128 GC9107 | Simulation only | Small display, no BSP |
+| M5Stack Atom S3R | 128x128 ST7735 | Simulation only | Small display, no BSP. Driver changed from GC9107 to ST7735 (2026-05-14), uses ST7789 driver |
 | ESP32-S3-BOX | 320x240 ST7789 | Simulation only | No BSP component available |
 
 ## Technical Limitations
@@ -122,7 +123,6 @@ Each test run produces the following artifacts:
 | Artifact | Contents | Retention |
 |----------|----------|-----------|
 | `flash-files-{board}-screenshot` | Screenshot PNG | 7 days |
-| `flash-files-{board}-logs` | Serial log output | 7 days |
 | `flash-files-{board}` | Build artifacts (ZIP) | 7 days |
 
 ## Screenshot Gallery
@@ -130,10 +130,9 @@ Each test run produces the following artifacts:
 The screenshot gallery is automatically deployed to GitHub Pages after each CI run. It displays:
 
 - Screenshot images for supported boards
-- Test status (passed/failed) for all boards
 - Timestamp of last update
 
-Access at: `https://<username>.github.io/esp-idf-component-raylib/`
+Access at: `https://<username>.github.io/esp-idf-component-raylib/gallery/`
 
 ## Template System
 
