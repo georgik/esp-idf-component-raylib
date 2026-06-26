@@ -72,6 +72,16 @@ jobs:
       - name: Generate gallery
         if: github.event_name == 'workflow_run'
         run: |
+          echo "=== Diagnostics: Current directory ==="
+          pwd
+          echo ""
+          echo "=== Diagnostics: ci-screenshots structure ==="
+          ls -laR ci-screenshots/
+          echo ""
+          echo "=== Diagnostics: Find all screen.png ==="
+          find ci-screenshots/ -name "screen.png" -type f
+          echo ""
+
           mkdir -p temp-launchpad/gallery/screenshots
 
           # Reorganize screenshots
@@ -80,6 +90,7 @@ jobs:
               board_id=$(basename "$artifact_dir" | sed 's/flash-files-//g' | sed 's/-screenshot//g')
               mkdir -p "temp-launchpad/gallery/screenshots/$board_id"
               cp "$artifact_dir/screen.png" "temp-launchpad/gallery/screenshots/$board_id/screen.png"
+              echo "Found screenshot for: $board_id"
             fi
           done
 
