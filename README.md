@@ -247,8 +247,19 @@ esp-idf-component-raylib/
 │           └── ...
 ```
 
+## Continuous Integration
+
+The project uses automated testing via Wokwi simulation:
+
+- **All examples** are built and tested on each commit
+- **Screenshots** are captured for supported boards (ESP32-S3-BOX-3, M5Stack Core S3, M5Stack Core 2)
+- **Screenshot Gallery** available at GitHub Pages
+
+See **[CI Documentation](docs/CI.md)** for detailed information about testing infrastructure, current limitations, and board-specific status.
+
 ## Documentation
 
+- **[CI Documentation](docs/CI.md)** - Continuous integration, testing status, and limitations
 - **[Component README](raylib/README.md)** - Architecture, configuration, and API
 - **[Template Guide](raylib/templates/raylib-hello-c/README.md)** - Template structure reference
 
@@ -288,6 +299,8 @@ With raylib on ESP32, you can create:
 - 3D models disabled (requires filesystem)
 - Touch input framework ready but not yet connected
 - Large displays (1024x600) render slowly at full resolution
+
+For CI testing limitations and board-specific status, see the [CI Documentation](docs/CI.md).
 
 ## License
 

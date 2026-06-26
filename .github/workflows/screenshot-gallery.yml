@@ -1,0 +1,262 @@
+name: Screenshot Gallery
+
+on:
+  workflow_run:
+    workflows: ["Build and Test Raylib Examples"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "screenshots-pages"
+  cancel-in-progress: true
+
+jobs:
+  build-gallery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all screenshots
+        uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: flash-files-*-screenshot
+          path: screenshots
+          merge-multiple: true
+
+      - name: Download all logs
+        uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: flash-files-*-logs
+          path: logs
+          merge-multiple: true
+
+      - name: Generate gallery HTML
+        run: |
+          # Create gallery directory
+          mkdir -p gallery
+
+          # Generate HTML
+          cat > gallery/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Raylib Examples - Screenshot Gallery</title>
+              <style>
+                  * {
+                      margin: 0;
+                      padding: 0;
+                      box-sizing: border-box;
+                  }
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                      background: #1a1a2e;
+                      color: #eee;
+                      line-height: 1.6;
+                  }
+                  .header {
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      padding: 2rem;
+                      text-align: center;
+                  }
+                  .header h1 {
+                      font-size: 2rem;
+                      margin-bottom: 0.5rem;
+                  }
+                  .header p {
+                      opacity: 0.9;
+                  }
+                  .container {
+                      max-width: 1200px;
+                      margin: 0 auto;
+                      padding: 2rem;
+                  }
+                  .gallery {
+                      display: grid;
+                      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                      gap: 1.5rem;
+                  }
+                  .screenshot-card {
+                      background: #16213e;
+                      border-radius: 12px;
+                      overflow: hidden;
+                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+                      transition: transform 0.2s;
+                  }
+                  .screenshot-card:hover {
+                      transform: translateY(-4px);
+                  }
+                  .screenshot-card img {
+                      width: 100%;
+                      height: auto;
+                      display: block;
+                  }
+                  .screenshot-info {
+                      padding: 1rem;
+                  }
+                  .screenshot-info h3 {
+                      font-size: 1rem;
+                      margin-bottom: 0.5rem;
+                      color: #667eea;
+                  }
+                  .screenshot-info .status {
+                      display: inline-block;
+                      padding: 0.25rem 0.75rem;
+                      border-radius: 20px;
+                      font-size: 0.75rem;
+                      font-weight: bold;
+                  }
+                  .status.success {
+                      background: #10b981;
+                      color: #fff;
+                  }
+                  .status.missing {
+                      background: #ef4444;
+                      color: #fff;
+                  }
+                  .status.no-screenshot {
+                      background: #6b7280;
+                      color: #fff;
+                  }
+                  .footer {
+                      text-align: center;
+                      padding: 2rem;
+                      opacity: 0.7;
+                      font-size: 0.875rem;
+                  }
+                  .footer a {
+                      color: #667eea;
+                      text-decoration: none;
+                  }
+                  .last-updated {
+                      text-align: center;
+                      padding: 1rem;
+                      opacity: 0.8;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>🖼️ Raylib Examples - Screenshot Gallery</h1>
+                  <p>Simulation results from Wokwi CI</p>
+              </div>
+
+              <div class="container">
+                  <div class="last-updated">
+                      Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+                  </div>
+
+                  <div class="gallery">
+          EOF
+
+          # Board names mapping
+          declare -A board_names=(
+              ["espressif-esp32-s3-box-3_hello"]="ESP32-S3-BOX-3"
+              ["m5stack-core-s3_hello"]="M5Stack Core S3"
+              ["m5stack-core2_hello"]="M5Stack Core 2"
+              ["espressif-esp-vocat_hello"]="ESP-VoCat"
+              ["esp32s3-korvo-2_hello"]="ESP32-S3-Korvo-2"
+              ["espressif-esp32-s3-eye_hello"]="ESP32-S3-EYE"
+              ["esp32-s3-lcd-ev-board_hello"]="ESP32-S3-LCD-EV-Board"
+              ["m5stack-atom-s3_hello"]="M5Stack Atom S3"
+              ["m5stack-atom-s3r_hello"]="M5Stack Atom S3R"
+          )
+
+          # Screenshots only work for these boards
+          declare -A screenshot_boards=(
+              ["espressif-esp32-s3-box-3_hello"]="yes"
+              ["m5stack-core-s3_hello"]="yes"
+              ["m5stack-core2_hello"]="yes"
+          )
+
+          # Generate cards for each board
+          for log_file in logs/*.txt; do
+              if [[ -f "$log_file" ]]; then
+                  # Extract board name from filename
+                  filename=$(basename "$log_file")
+                  board_id="${filename/wokwi-log.txt/}"
+
+                  # Check log content
+                  if grep -q "Starting demo loop" "$log_file"; then
+                      status="success"
+                      status_text="✓ Passed"
+                  elif grep -q "Backtrace:" "$log_file"; then
+                      status="failed"
+                      status_text="✗ Failed"
+                  else
+                      status="unknown"
+                      status_text="? Unknown"
+                  fi
+
+                  # Check for screenshot
+                  board_name="${board_names[$board_id]:-$board_id}"
+                  has_screenshot="${screenshot_boards[$board_id]:-no}"
+
+                  if [[ "$has_screenshot" == "yes" ]]; then
+                      if [[ -f "screenshots/${board_id}-screenshot/screen.png" ]]; then
+                          img_html="<img src=\"screenshots/${board_id}-screenshot/screen.png\" alt=\"${board_name}\" loading=\"lazy\">"
+                      else
+                          img_html="<div style=\"padding: 4rem; text-align: center; opacity: 0.5;\">No screenshot</div>"
+                      fi
+                      screenshot_status="<span class=\"status success\">Screenshot</span>"
+                  else
+                      img_html="<div style=\"padding: 4rem; text-align: center; opacity: 0.5;\">Screenshot not supported</div>"
+                      screenshot_status="<span class=\"status no-screenshot\">No screenshot</span>"
+                  fi
+
+                  # Status badge
+                  if [[ "$status" == "success" ]]; then
+                      status_badge="<span class=\"status success\">${status_text}</span>"
+                  elif [[ "$status" == "failed" ]]; then
+                      status_badge="<span class=\"status missing\">${status_text}</span>"
+                  else
+                      status_badge="<span class=\"status no-screenshot\">${status_text}</span>"
+                  fi
+
+                  cat >> gallery/index.html << EOF
+                      <div class="screenshot-card">
+                          ${img_html}
+                          <div class="screenshot-info">
+                              <h3>${board_name}</h3>
+                              <div style="margin-top: 0.5rem;">
+                                  ${status_badge}
+                                  ${screenshot_status}
+                              </div>
+                          </div>
+                      </div>
+          EOF
+              fi
+          done
+
+          # Close HTML
+          cat >> gallery/index.html << 'EOF'
+                  </div>
+              </div>
+
+              <div class="footer">
+                  <p>Generated by <a href="https://github.com/georgik/esp-idf-component-raylib">esp-idf-component-raylib</a> CI</p>
+                  <p>Powered by <a href="https://wokwi.com">Wokwi</a> simulation</p>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gallery
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

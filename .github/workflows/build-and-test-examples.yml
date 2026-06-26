@@ -127,31 +127,23 @@ jobs:
           # curl -L https://wokwi.com/ci/install.sh | bash
           # echo "$HOME/.wokwi/bin" >> $GITHUB_PATH
 
+      - name: Copy ELF to example directory
+        run: |
+          cp "${{ env.APP_BIN }}" "raylib/examples/${{ matrix.board }}/firmware.elf"
+
       - name: Run Wokwi simulation
         run: |
-          EXAMPLE_NAME=$(basename ${{ matrix.board }})
-          BOARD_NAME=${EXAMPLE_NAME%_hello}
-
-          ./wokwi-cli \
-            --timeout 5000 \
-            --timeout-exit-code 0 \
-            --fail-text "Backtrace: " \
-            --screenshot-part "esp" \
-            --screenshot-time 4500 \
-            --elf "${{ env.APP_BIN }}" \
-            --screenshot-file "screenshot-${BOARD_NAME}.png" \
-            --serial-log-file 'wokwi-log.txt' \
-            --boards-url "https://georgik.rocks/wp-content/html5/wokwi/boards.json" \
-            "raylib/examples/${{ matrix.board }}"
+          cd "raylib/examples/${{ matrix.board }}"
+          bash wokwi-run.sh
         env:
           WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
 
       - name: Upload screenshot
-        uses: actions/upload-artifact@v7.0.1
         if: success()
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{ env.artifact_name }}-screenshot
-          path: screenshot-*.png
+          path: raylib/examples/${{ matrix.board }}/screen.png
           retention-days: 7
 
       - name: Upload Wokwi logs
