@@ -57,6 +57,7 @@ jobs:
           target: ${{ env.TARGET }}
           path: '.'
           command: |
+            set -e
             cd raylib/examples/${{ matrix.example }}
             idf.py build
             cd build
