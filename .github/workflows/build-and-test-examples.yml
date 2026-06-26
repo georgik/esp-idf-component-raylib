@@ -83,7 +83,7 @@ jobs:
         board:
           - esp32s3/espressif-esp32-s3-box-3_hello
           - esp32s3/espressif-esp32-s3-eye_hello
-          - esp32s3/espressif-esp32-s3-korvo-2_hello
+          # esp32s3/espressif-esp32-s3-korvo-2_hello - DISABLED: Missing GPIO expander (TCA9554) support in Wokwi
           - esp32s3/espressif-esp32-s3-lcd-ev-board_hello
           - esp32s3/espressif-esp-vocat_hello
           - esp32s3/m5stack-atom-s3_hello
