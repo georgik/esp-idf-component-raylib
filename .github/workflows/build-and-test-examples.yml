@@ -135,6 +135,7 @@ jobs:
           ./wokwi-cli \
             --timeout 5000 \
             --timeout-exit-code 0 \
+            --fail-text "Backtrace: " \
             --screenshot-part "esp" \
             --screenshot-time 4500 \
             --elf "${{ env.APP_BIN }}" \
