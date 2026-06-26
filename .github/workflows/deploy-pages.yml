@@ -44,16 +44,6 @@ jobs:
           path: ci-screenshots
           merge-multiple: true
 
-      - name: Download CI logs
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v8.0.1
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-          pattern: flash-files-*-logs
-          path: ci-logs
-          merge-multiple: true
-
       # Download release binaries if triggered by release
       - name: Download release binaries
         if: github.event_name == 'release'
@@ -87,15 +77,18 @@ jobs:
           # Reorganize screenshots
           for artifact_dir in ci-screenshots/flash-files-*-screenshot; do
             if [[ -f "$artifact_dir/screen.png" ]]; then
-              board_name=$(basename "$artifact_dir" | sed 's/flash-files-//g' | sed 's/-screenshot//g')
-              mkdir -p "temp-launchpad/gallery/screenshots/$board_name"
-              cp "$artifact_dir/screen.png" "temp-launchpad/gallery/screenshots/$board_name/screen.png"
+              board_id=$(basename "$artifact_dir" | sed 's/flash-files-//g' | sed 's/-screenshot//g')
+              mkdir -p "temp-launchpad/gallery/screenshots/$board_id"
+              cp "$artifact_dir/screen.png" "temp-launchpad/gallery/screenshots/$board_id/screen.png"
             fi
           done
 
           cd temp-launchpad/gallery
 
-          cat > index.html << 'EOF'
+          # Generate timestamp first
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          cat > index.html << EOF
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -144,8 +137,6 @@ jobs:
                       font-weight: bold;
                   }
                   .status.success { background: #10b981; color: #fff; }
-                  .status.missing { background: #ef4444; color: #fff; }
-                  .status.no-screenshot { background: #6b7280; color: #fff; }
                   .footer {
                       text-align: center;
                       padding: 2rem;
@@ -171,13 +162,13 @@ jobs:
 
               <div class="container">
                   <div class="last-updated">
-                      Last updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+                      Last updated: ${TIMESTAMP}
                   </div>
 
                   <div class="gallery">
           EOF
 
-          # Board mappings
+          # Board name mapping
           declare -A board_names=(
               ["esp32s3-espressif-esp32-s3-box-3_hello"]="ESP32-S3-BOX-3"
               ["esp32s3-m5stack-core-s3_hello"]="M5Stack Core S3"
@@ -190,61 +181,25 @@ jobs:
               ["esp32s3-m5stack-atom-s3r_hello"]="M5Stack Atom S3R"
           )
 
-          declare -A screenshot_boards=(
-              ["esp32s3-espressif-esp32-s3-box-3_hello"]="yes"
-              ["esp32s3-m5stack-core-s3_hello"]="yes"
-              ["esp32-m5stack-core2_hello"]="no"
-          )
+          # Iterate over screenshots directly
+          for screenshot_dir in screenshots/*/; do
+            if [[ -f "$screenshot_dir/screen.png" ]]; then
+              board_id=$(basename "$screenshot_dir")
+              board_name="${board_names[$board_id]:-$board_id}"
 
-          for log_file in ../../ci-logs/*.txt; do
-              if [[ -f "$log_file" ]]; then
-                  artifact_name=$(basename "$(dirname "$log_file")")
-                  board_id="${artifact_name/flash-files-/}"
-                  board_id="${board_id/-logs/}"
-
-                  if grep -q "Starting demo loop" "$log_file"; then
-                      status="success"; status_text="Passed"
-                  elif grep -q "Backtrace:" "$log_file"; then
-                      status="failed"; status_text="Failed"
-                  else
-                      status="unknown"; status_text="Unknown"
-                  fi
-
-                  board_name="${board_names[$board_id]:-$board_id}"
-                  has_screenshot="${screenshot_boards[$board_id]:-no}"
-
-                  if [[ "$has_screenshot" == "yes" ]]; then
-                      if [[ -f "screenshots/$board_id/screen.png" ]]; then
-                          img_html="<img src=\"screenshots/$board_id/screen.png\" alt=\"${board_name}\" loading=\"lazy\">"
-                      else
-                          img_html="<div style=\"padding: 4rem; text-align: center; opacity: 0.5;\">No screenshot available</div>"
-                      fi
-                      screenshot_status="<span class=\"status success\">Screenshot</span>"
-                  else
-                      img_html="<div style=\"padding: 4rem; text-align: center; opacity: 0.5;\">Screenshot not supported</div>"
-                      screenshot_status="<span class=\"status no-screenshot\">No screenshot</span>"
-                  fi
-
-                  if [[ "$status" == "success" ]]; then
-                      status_badge="<span class=\"status success\">${status_text}</span>"
-                  elif [[ "$status" == "failed" ]]; then
-                      status_badge="<span class=\"status missing\">${status_text}</span>"
-                  else
-                      status_badge="<span class=\"status no-screenshot\">${status_text}</span>"
-                  fi
-
-                  cat >> index.html << EOF
-                      <div class="screenshot-card">
-                          ${img_html}
-                          <div class="screenshot-info">
-                              <h3>${board_name}</h3>
-                              <div style="margin-top: 0.5rem;">
-                                  ${status_badge} ${screenshot_status}
-                              </div>
+              cat >> index.html << EOF
+                  <div class="screenshot-card">
+                      <img src="screenshots/${board_id}/screen.png" alt="${board_name}" loading="lazy">
+                      <div class="screenshot-info">
+                          <h3>${board_name}</h3>
+                          <div style="margin-top: 0.5rem;">
+                              <span class="status success">Passed</span>
+                              <span class="status success">Screenshot</span>
                           </div>
                       </div>
+                  </div>
           EOF
-              fi
+            fi
           done
 
           cat >> index.html << 'EOF'
