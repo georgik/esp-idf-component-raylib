@@ -17,7 +17,7 @@
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_vendor.h"
-#include "esp_lcd_panel_gc9107.h"
+#include "esp_lcd_panel_st7789.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
@@ -97,7 +97,8 @@ static esp_err_t init_display(void)
 {
     ESP_LOGI(TAG, "Initializing display...");
 
-    // M5Stack AtomS3R has no BSP - use direct esp_lcd init with GC9107
+    // M5Stack AtomS3R display driver changed from GC9107 to ST7735 (2026-05-14)
+    // ST7735 not in ESP-IDF, using ST7789 (similar Sitronix chip)
     // Pinout from M5Stack AtomS3R hardware docs
     #define M5STACK_ATOM_S3R_LCD_MOSI      GPIO_NUM_21
     #define M5STACK_ATOM_S3R_LCD_SCLK      GPIO_NUM_15
@@ -133,15 +134,15 @@ static esp_err_t init_display(void)
     // Create panel IO (ESP-IDF 6 API - uses SPI3_HOST directly)
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_cfg, &g_io));
 
-    // GC9107 panel configuration (ESP-IDF 6 API)
+    // ST7789 panel configuration (ESP-IDF 6 API)
     esp_lcd_panel_dev_config_t panel_cfg = {
         .reset_gpio_num = M5STACK_ATOM_S3R_LCD_RST,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
         .bits_per_pixel = 16,
     };
 
-    // Initialize GC9107 panel
-    ESP_ERROR_CHECK(esp_lcd_new_panel_gc9107(g_io, &panel_cfg, &g_panel));
+    // Initialize ST7789 panel
+    ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(g_io, &panel_cfg, &g_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_reset(g_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(g_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_mirror(g_panel, true, true));

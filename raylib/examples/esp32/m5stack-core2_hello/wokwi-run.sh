@@ -25,8 +25,7 @@ WOKWI_ARGS=(
     --expect-text "Starting demo loop..."
 )
 
-# Built-in ESP32 board with integrated display - screenshot supported
-WOKWI_ARGS+=(--screenshot-part "esp" --screenshot-time 10000 --screenshot-file "screen.png")
+# Custom board - screenshot disabled (not registered on Wokwi server)
 
 
 # Add firmware

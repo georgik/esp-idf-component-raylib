@@ -87,7 +87,7 @@ raylib/examples/esp32s3/
 ├── espressif-esp32-s3-lcd-ev-board_hello/ # 480x480 GC9503
 ├── espressif-esp-vocat_hello/             # 360x360 ST77916
 ├── m5stack-atom-s3_hello/                 # 128x128 GC9A01
-├── m5stack-atom-s3r_hello/                # 128x128 GC9107
+├── m5stack-atom-s3r_hello/                # 128x128 ST7735 (driver change 2026-05-14)
 └── m5stack-core-s3_hello/                 # 320x240 ILI9341
 ```
 
@@ -301,6 +301,10 @@ With raylib on ESP32, you can create:
 - Large displays (1024x600) render slowly at full resolution
 
 For CI testing limitations and board-specific status, see the [CI Documentation](docs/CI.md).
+
+## Hardware Notes
+
+- **M5Stack Atom S3R**: Display driver changed from GC9107 to ST7735 (2026-05-14). ST7735 driver not available in ESP-IDF, implementation uses ST7789 driver (similar Sitronix chip family).
 
 ## License
 

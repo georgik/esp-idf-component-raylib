@@ -32,8 +32,7 @@ WOKWI_ARGS+=(--screenshot-part "esp" --screenshot-time 10000 --screenshot-file "
 # Built-in board with integrated display - screenshot supported
 WOKWI_ARGS+=(--screenshot-part "esp" --screenshot-time 10000 --screenshot-file "screen.png")
 //ELIF option("m5stack_core_2")
-# Built-in ESP32 board with integrated display - screenshot supported
-WOKWI_ARGS+=(--screenshot-part "esp" --screenshot-time 10000 --screenshot-file "screen.png")
+# Custom board - screenshot disabled (not registered on Wokwi server)
 //ENDIF
 
 //IF option("esp_vocat") || option("esp32s3_korvo_2") || option("esp32_s3_eye") || option("esp32_s3_lcd_ev_board")
