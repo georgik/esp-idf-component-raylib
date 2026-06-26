@@ -42,7 +42,6 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           pattern: flash-files-*-screenshot
           path: ci-screenshots
-          merge-multiple: true
 
       # Download release binaries if triggered by release
       - name: Download release binaries
