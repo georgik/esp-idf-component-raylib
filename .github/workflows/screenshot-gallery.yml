@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "screenshots-pages"
+  group: "gallery-pages"
   cancel-in-progress: true
 
 jobs:
@@ -37,13 +37,26 @@ jobs:
           path: logs
           merge-multiple: true
 
+      - name: Reorganize screenshots
+        run: |
+          # Artifacts store screen.png at root, need to organize by board
+          mkdir -p gallery/screenshots
+          for artifact_dir in screenshots/flash-files-*-screenshot; do
+            if [[ -f "$artifact_dir/screen.png" ]]; then
+              # Extract board name from artifact directory name
+              board_name=$(basename "$artifact_dir" | sed 's/flash-files-//g' | sed 's/-screenshot//g')
+              mkdir -p "gallery/screenshots/$board_name"
+              cp "$artifact_dir/screen.png" "gallery/screenshots/$board_name/screen.png"
+            fi
+          done
+
       - name: Generate gallery HTML
         run: |
-          # Create gallery directory
-          mkdir -p gallery
+          # Gallery directory already exists from previous step
+          cd gallery
 
           # Generate HTML
-          cat > gallery/index.html << 'EOF'
+          cat > index.html << 'EOF'
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -58,21 +71,22 @@ jobs:
                   }
                   body {
                       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                      background: #1a1a2e;
-                      color: #eee;
+                      background: #f5f5f5;
+                      color: #333;
                       line-height: 1.6;
                   }
                   .header {
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      padding: 2rem;
+                      background: #2c3e50;
+                      padding: 1.5rem;
                       text-align: center;
                   }
                   .header h1 {
-                      font-size: 2rem;
-                      margin-bottom: 0.5rem;
+                      font-size: 1.5rem;
+                      color: #fff;
                   }
                   .header p {
-                      opacity: 0.9;
+                      color: #ecf0f1;
+                      font-size: 0.9rem;
                   }
                   .container {
                       max-width: 1200px;
@@ -85,14 +99,10 @@ jobs:
                       gap: 1.5rem;
                   }
                   .screenshot-card {
-                      background: #16213e;
-                      border-radius: 12px;
+                      background: #fff;
+                      border-radius: 8px;
                       overflow: hidden;
-                      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-                      transition: transform 0.2s;
-                  }
-                  .screenshot-card:hover {
-                      transform: translateY(-4px);
+                      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                   }
                   .screenshot-card img {
                       width: 100%;
@@ -105,12 +115,12 @@ jobs:
                   .screenshot-info h3 {
                       font-size: 1rem;
                       margin-bottom: 0.5rem;
-                      color: #667eea;
+                      color: #2c3e50;
                   }
                   .screenshot-info .status {
                       display: inline-block;
                       padding: 0.25rem 0.75rem;
-                      border-radius: 20px;
+                      border-radius: 4px;
                       font-size: 0.75rem;
                       font-weight: bold;
                   }
@@ -133,7 +143,7 @@ jobs:
                       font-size: 0.875rem;
                   }
                   .footer a {
-                      color: #667eea;
+                      color: #3498db;
                       text-decoration: none;
                   }
                   .last-updated {
@@ -141,12 +151,27 @@ jobs:
                       padding: 1rem;
                       opacity: 0.8;
                   }
+                  .nav {
+                      padding: 1rem 2rem;
+                      background: #ecf0f1;
+                      text-align: center;
+                  }
+                  .nav a {
+                      color: #3498db;
+                      text-decoration: none;
+                      margin: 0 1rem;
+                  }
               </style>
           </head>
           <body>
               <div class="header">
-                  <h1>🖼️ Raylib Examples - Screenshot Gallery</h1>
+                  <h1>Raylib Examples - Screenshot Gallery</h1>
                   <p>Simulation results from Wokwi CI</p>
+              </div>
+
+              <div class="nav">
+                  <a href="/">Flash Pre-built Binaries</a>
+                  <a href="https://github.com/georgik/esp-idf-component-raylib">Repository</a>
               </div>
 
               <div class="container">
@@ -157,54 +182,58 @@ jobs:
                   <div class="gallery">
           EOF
 
-          # Board names mapping
+          # Board names mapping (artifact naming: flash-files-esp32s3-board-hello-screenshot)
           declare -A board_names=(
-              ["espressif-esp32-s3-box-3_hello"]="ESP32-S3-BOX-3"
-              ["m5stack-core-s3_hello"]="M5Stack Core S3"
-              ["m5stack-core2_hello"]="M5Stack Core 2"
-              ["espressif-esp-vocat_hello"]="ESP-VoCat"
-              ["esp32s3-korvo-2_hello"]="ESP32-S3-Korvo-2"
-              ["espressif-esp32-s3-eye_hello"]="ESP32-S3-EYE"
-              ["esp32-s3-lcd-ev-board_hello"]="ESP32-S3-LCD-EV-Board"
-              ["m5stack-atom-s3_hello"]="M5Stack Atom S3"
-              ["m5stack-atom-s3r_hello"]="M5Stack Atom S3R"
+              ["esp32s3-espressif-esp32-s3-box-3_hello"]="ESP32-S3-BOX-3"
+              ["esp32s3-m5stack-core-s3_hello"]="M5Stack Core S3"
+              ["esp32-m5stack-core2_hello"]="M5Stack Core 2"
+              ["esp32s3-espressif-esp-vocat_hello"]="ESP-VoCat"
+              ["esp32s3-espressif-esp32-s3-korvo-2_hello"]="ESP32-S3-Korvo-2"
+              ["esp32s3-espressif-esp32-s3-eye_hello"]="ESP32-S3-EYE"
+              ["esp32s3-espressif-esp32-s3-lcd-ev-board_hello"]="ESP32-S3-LCD-EV-Board"
+              ["esp32s3-m5stack-atom-s3_hello"]="M5Stack Atom S3"
+              ["esp32s3-m5stack-atom-s3r_hello"]="M5Stack Atom S3R"
           )
 
-          # Screenshots only work for these boards
+          # Screenshot support mapping (only boards with --screenshot args in template)
           declare -A screenshot_boards=(
-              ["espressif-esp32-s3-box-3_hello"]="yes"
-              ["m5stack-core-s3_hello"]="yes"
-              ["m5stack-core2_hello"]="yes"
+              ["esp32s3-espressif-esp32-s3-box-3_hello"]="yes"
+              ["esp32s3-m5stack-core-s3_hello"]="yes"
+              ["esp32-m5stack-core2_hello"]="no"
           )
 
-          # Generate cards for each board
-          for log_file in logs/*.txt; do
+          # Generate cards for each board from logs
+          for log_file in ../logs/*.txt; do
               if [[ -f "$log_file" ]]; then
-                  # Extract board name from filename
-                  filename=$(basename "$log_file")
-                  board_id="${filename/wokwi-log.txt/}"
+                  # Extract board name from log filename (wokwi-log.txt from artifact)
+                  artifact_dir=$(dirname "$log_file")
+                  artifact_name=$(basename "$artifact_dir")
+                  # Convert artifact name to board_id (remove "flash-files-" prefix and "-logs" suffix)
+                  board_id="${artifact_name/flash-files-/}"
+                  board_id="${board_id/-logs/}"
 
                   # Check log content
                   if grep -q "Starting demo loop" "$log_file"; then
                       status="success"
-                      status_text="✓ Passed"
+                      status_text="Passed"
                   elif grep -q "Backtrace:" "$log_file"; then
                       status="failed"
-                      status_text="✗ Failed"
+                      status_text="Failed"
                   else
                       status="unknown"
-                      status_text="? Unknown"
+                      status_text="Unknown"
                   fi
 
-                  # Check for screenshot
+                  # Get display name
                   board_name="${board_names[$board_id]:-$board_id}"
                   has_screenshot="${screenshot_boards[$board_id]:-no}"
 
+                  # Check for screenshot file
                   if [[ "$has_screenshot" == "yes" ]]; then
-                      if [[ -f "screenshots/${board_id}-screenshot/screen.png" ]]; then
-                          img_html="<img src=\"screenshots/${board_id}-screenshot/screen.png\" alt=\"${board_name}\" loading=\"lazy\">"
+                      if [[ -f "screenshots/$board_id/screen.png" ]]; then
+                          img_html="<img src=\"screenshots/$board_id/screen.png\" alt=\"${board_name}\" loading=\"lazy\">"
                       else
-                          img_html="<div style=\"padding: 4rem; text-align: center; opacity: 0.5;\">No screenshot</div>"
+                          img_html="<div style=\"padding: 4rem; text-align: center; opacity: 0.5;\">No screenshot available</div>"
                       fi
                       screenshot_status="<span class=\"status success\">Screenshot</span>"
                   else
@@ -221,7 +250,7 @@ jobs:
                       status_badge="<span class=\"status no-screenshot\">${status_text}</span>"
                   fi
 
-                  cat >> gallery/index.html << EOF
+                  cat >> index.html << EOF
                       <div class="screenshot-card">
                           ${img_html}
                           <div class="screenshot-info">
@@ -237,7 +266,7 @@ jobs:
           done
 
           # Close HTML
-          cat >> gallery/index.html << 'EOF'
+          cat >> index.html << 'EOF'
                   </div>
               </div>
 
