@@ -6,6 +6,8 @@ This component enables running raylib on ESP32 devices without GPU/OpenGL suppor
 
 **[Component Registry](https://components.espressif.com/components/georgik/raylib)** - Available via ESP Component Manager (`idf.py add-component`)
 
+**[Examples](https://components.espressif.com/components/georgik/raylib/versions/6.0.0~2/examples)** - Ready-to-use examples from Component Registry
+
 ## Architecture
 
 This implementation uses a **direct BSP integration** approach where board-specific examples handle display initialization and register callbacks with raylib:
