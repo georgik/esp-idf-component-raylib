@@ -25,7 +25,7 @@ esp_lcd (ESP-IDF display driver)
 ```
 
 - **Board-specific examples**: Each board has a dedicated example in `raylib/examples/`
-- **Template-based generation**: Examples are generated from a single template using esp-generate
+- **Template-based generation**: Examples are generated from a single template using the standalone example-maker tool
 - **BSP integration**: Works with esp-bsp noglib components for supported boards
 - **Direct display init**: For boards without BSP, custom display initialization is provided
 
@@ -139,31 +139,49 @@ Expected output should show paths to the local raylib component.
 
 ## For Maintainers
 
-### Template System
+### Template System & Example Generation
 
-Board examples are generated from a template using `esp-generate`. This allows consistent code structure across all boards and makes it easy to add new board support.
+All board examples are generated from a single template by **example-maker**, a standalone code-generation tool written in Rust (https://github.com/georgik/example-maker). This keeps every example structurally identical and makes adding new boards straightforward.
 
-**Template location:** `raylib/templates/raylib-hello-c/`
+- **Tool:** https://github.com/georgik/example-maker
+- **Template location:** `raylib/templates/raylib-hello-c/`
+- **Generated examples:** `raylib/examples/<vendor-board>_hello/`
 
-**Generated examples:** `raylib/examples/<board>_hello/`
+### Installing example-maker
 
-### Regenerating Examples
-
-To regenerate all examples from the template (after modifying the template):
+The tool is bundled in this repository under `example-maker/`. Build and install it with Cargo:
 
 ```bash
-# Requires esp-generate to be installed
-# Custom fork: https://github.com/georgik/esp-generate
-cd raylib
-./scripts/regenerate-all.sh
+cd example-maker
+cargo install --path .        # installs ~/.cargo/bin/example-maker
+
+# or build only / run without installing:
+cargo build --release
+cargo run --release -- regenerate
 ```
 
-The script will:
-1. Check for esp-generate installation
-2. Generate examples for all configured boards
-3. Report success/failure for each board
+You can also clone the standalone project instead of using the bundled copy:
 
-**Note:** Currently only maintainers should regenerate examples. The custom esp-generate fork contains fixes for ESP32 chip support that are not yet upstreamed.
+```bash
+git clone https://github.com/georgik/example-maker
+cd example-maker && cargo install --path .
+```
+
+### Regenerating examples
+
+`example-maker` is invoked **from the directory that holds `templates/`** (here, `raylib/`). The template resolves relative to that location by default; pass `--template <dir>` for anything else.
+
+```bash
+cd raylib
+example-maker regenerate          # expands all boards -> raylib/examples/
+
+# from a different template / into a different place:
+example-maker regenerate --template ../other/template --output ../out
+```
+
+It prints per-board results and ends with a summary line, e.g. `Summary: 10 successful, 0 failed`. If `templates/` is not found in the current directory it exits with an error telling you to pass `--template <dir>` or run from the templates directory.
+
+> **Maintainers only.** Regeneration should be done by maintainers so users get ready-made examples without installing anything. Keep `raylib/examples/` committed; the bundled engine contains fixes that are not yet upstreamed.
 
 ### Adding a New Board
 
@@ -179,10 +197,10 @@ To add support for a new board:
      - Display init (BSP or direct)
 
 2. **Regenerate examples:**
-   ```bash
-   cd raylib
-   ./scripts/regenerate-all.sh
-   ```
+    ```bash
+    cd raylib
+    example-maker regenerate
+    ```
 
 3. **Test the new example:**
    ```bash
@@ -233,6 +251,7 @@ See the migration notes in this repository for detailed upgrade instructions.
 ```
 esp-idf-component-raylib/
 ├── README.md                  # This file
+├── example-maker/             # Standalone code generator (https://github.com/georgik/example-maker)
 ├── raylib/                    # Main component
 │   ├── README.md              # Component documentation
 │   ├── CMakeLists.txt         # Component build configuration
@@ -242,8 +261,6 @@ esp-idf-component-raylib/
 │   ├── raylib/                # Submodule: official raylib
 │   ├── templates/             # Example templates
 │   │   └── raylib-hello-c/    # Hello example template
-│   ├── scripts/               # Utility scripts
-│   │   └── regenerate-all.sh  # Regenerate examples
 │   └── examples/              # Generated board examples
 │       ├── esp32/             # ESP32 chip examples
 │       │   └── m5stack-core2_hello/
