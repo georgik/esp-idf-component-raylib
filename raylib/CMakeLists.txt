@@ -19,12 +19,14 @@ idf_component_register(
 )
 
 # Enable software renderer
+# RLSW_FRAMEBUFFER_COLOR_TYPE/RGB565 must be defined on the command line so it
+# reaches the rlsw software-renderer translation unit (rlsw.h, which does not
+# include config.h). config.h also defines it identically, which is benign.
 target_compile_definitions(${COMPONENT_TARGET} PUBLIC
     GRAPHICS_API_OPENGL_SOFTWARE
     PLATFORM_CUSTOM
-    SW_COLOR_BUFFER_BITS=16
-    SW_DEPTH_BUFFER_BITS=16
-    SW_FRAMEBUFFER_COLOR_TYPE=R5G6B5
+    RLSW_FRAMEBUFFER_COLOR_TYPE=R5G6B5
+    RLSW_FRAMEBUFFER_OUTPUT_BGRA=false
 )
 
 # Prioritize our custom include directory for config.h lookup and suppress warnings
