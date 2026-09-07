@@ -12,10 +12,10 @@
 // Include ESP-IDF headers for memory allocation
 #include "esp_heap_caps.h"
 
-// Configure software renderer to use RGB565 internally (like Raylib 5.6.0)
-// This avoids format conversion and matches the working version
-#define SW_FRAMEBUFFER_COLOR_TYPE R5G6B5
-#define SW_FRAMEBUFFER_OUTPUT_BGRA false
+// Configure software renderer framebuffer color type.
+// #6029: public options renamed from SW_ to RLSW_
+#define RLSW_FRAMEBUFFER_COLOR_TYPE R5G6B5
+#define RLSW_FRAMEBUFFER_OUTPUT_BGRA false
 
 // Define software renderer memory allocators BEFORE raylib's rlgl.h tries to define them
 // These macros will be used by the software renderer (rlsw.h)

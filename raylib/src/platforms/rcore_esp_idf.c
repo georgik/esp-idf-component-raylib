@@ -97,12 +97,12 @@ void SwapScreenBuffer(void)
         return;
     }
 
-    // Get software renderer framebuffer
+    // Get software renderer framebuffer (R5G6B5: 2 bytes per pixel)
     int sw_width, sw_height;
     uint16_t *sw_buf = (uint16_t *)swGetColorBuffer(&sw_width, &sw_height);
 
     if (!sw_buf || sw_width != s_screen_width || sw_height != s_screen_height) {
-        ESP_LOGE("RAYLIB", "Framebuffer mismatch!");
+        ESP_LOGE("RAYLIB", "Framebuffer mismatch! sw=%dx%d vs %dx%d", sw_width, sw_height, s_screen_width, s_screen_height);
         return;
     }
 
