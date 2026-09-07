@@ -175,7 +175,7 @@ jobs:
             cd raylib/examples/esp32s3/espressif-esp32-s3-box-3_hello
             idf.py build
             curl -fsSL https://github.com/georgik/espbrew-go/releases/download/v0.3.0/espbrew-linux-amd64 -o espbrew
-            chmod +x /usr/local/bin/espbrew
-            espbrew --help >/dev/null 2>&1
-            espbrew flash --chip esp32s3
+            chmod +x ./espbrew
+            ./espbrew --help >/dev/null 2>&1
+            ./espbrew flash --chip esp32s3
 
