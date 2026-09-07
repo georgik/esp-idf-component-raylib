@@ -154,3 +154,24 @@ jobs:
           name: ${{ env.artifact_name }}-logs
           path: wokwi-log.txt
           retention-days: 7
+
+  flash-box-3:
+    name: Flash ESP32-S3-BOX-3 (local hardware)
+    runs-on: [self-hosted]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4.2.2
+        with:
+          submodules: true
+
+      - name: ESP-IDF build (ESP32-S3-BOX-3, esp32s3)
+        uses: espressif/esp-idf-ci-action@v1.1.0
+        with:
+          esp_idf_version: ${{ inputs.esp_idf_version || 'release-v6.1' }}
+          target: esp32s3
+          path: '.'
+          command: |
+            set -e
+            cd raylib/examples/esp32s3/espressif-esp32-s3-box-3_hello
+            idf.py build
+            espbrew flash --chip esp32s3
