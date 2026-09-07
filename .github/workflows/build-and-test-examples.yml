@@ -179,5 +179,5 @@ jobs:
             curl -fsSL https://github.com/georgik/espbrew-go/releases/download/v0.3.0/espbrew-linux-amd64 -o espbrew
             chmod +x ./espbrew
             ./espbrew --help >/dev/null 2>&1
-            ./espbrew flash --chip esp32s3
+            ./espbrew flash --cluster "${{ secrets.ESPBREW_CLUSTER }}" --chip esp32s3
 
