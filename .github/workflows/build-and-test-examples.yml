@@ -165,6 +165,8 @@ jobs:
           submodules: true
 
       - name: ESP-IDF build (ESP32-S3-BOX-3, esp32s3)
+        env: 
+          ESPBREW_CLUSTER: ${{ secrets.ESPBREW_CLUSTER }}
         uses: espressif/esp-idf-ci-action@v1.1.0
         with:
           esp_idf_version: ${{ inputs.esp_idf_version || 'release-v6.1' }}
