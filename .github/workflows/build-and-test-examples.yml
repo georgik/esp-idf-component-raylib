@@ -29,8 +29,8 @@ jobs:
     strategy:
       matrix:
         device:
-          - alias: m5stack-atom-s3
-            example: esp32s3/m5stack-atom-s3_hello
+          - alias: m5stack-atom-s3r
+            example: esp32s3/m5stack-atom-s3r_hello
           - alias: esp32-s3-box-3
             example: esp32s3/espressif-esp32-s3-box-3_hello
       fail-fast: false
