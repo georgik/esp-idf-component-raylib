@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
         with:
           submodules: true
 
@@ -96,7 +96,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
         with:
           submodules: true
 
@@ -117,6 +117,8 @@ jobs:
           ESPBREW_CLUSTER: ${{ secrets.ESPBREW_CLUSTER }}
         run: |
           set -e
+          # Download to the repo root ($GITHUB_WORKSPACE). We cd into the example
+          # below, so reference espbrew by its absolute path after the cd.
           curl -fsSL https://github.com/georgik/espbrew-go/releases/download/v0.6.0/espbrew-linux-amd64 -o espbrew
           chmod +x ./espbrew
           ./espbrew --help >/dev/null 2>&1
@@ -124,4 +126,4 @@ jobs:
           # espbrew auto-detects the ESP-IDF project from the current directory
           # (this example dir) and reads flash offsets from its build/flash_args.
           cd raylib/examples/${{ matrix.device.example }}
-          ./espbrew flash --cluster "${{ secrets.ESPBREW_CLUSTER }}" --filter-alias "${{ matrix.device.alias }}"
+          "$GITHUB_WORKSPACE/espbrew" flash --cluster "${{ secrets.ESPBREW_CLUSTER }}" --filter-alias "${{ matrix.device.alias }}"
