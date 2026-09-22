@@ -25,7 +25,9 @@ jobs:
   # alias registered in the espbrew cluster (espbrew.toml).
   build:
     name: Build (${{ matrix.device.alias }})
-    runs-on: ubuntu-latest
+    # Pinned to ubuntu-24.04 (was ubuntu-latest) so the run does not
+    # silently migrate to Ubuntu 26 on 2026-10-19 (see GH runner-images#14748).
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         device:
