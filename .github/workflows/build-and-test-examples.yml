@@ -35,8 +35,12 @@ jobs:
             example: esp32/m5stack-core2_hello
           - alias: esp32-s3-box-3
             example: esp32s3/espressif-esp32-s3-box-3_hello
-          - alias: espressif-esp32-s3-lcd-ev-board
+          - alias: esp32-s3-lcd-ev-board
             example: esp32s3/espressif-esp32-s3-lcd-ev-board_hello
+          - alias: m5stack-atom-s3
+            example: esp32s3/m5stack-atom-s3_hello
+          - alias: esp-vocat
+            example: esp32s3/espressif-esp-vocat_hello
       fail-fast: false
 
     steps:
@@ -100,6 +104,10 @@ jobs:
             example: esp32s3/espressif-esp32-s3-box-3_hello
           - alias: esp32-s3-lcd-ev-board
             example: esp32s3/espressif-esp32-s3-lcd-ev-board_hello
+          - alias: m5stack-atom-s3
+            example: esp32s3/m5stack-atom-s3_hello
+          - alias: esp-vocat
+            example: esp32s3/espressif-esp-vocat_hello
       fail-fast: false
 
     steps:
