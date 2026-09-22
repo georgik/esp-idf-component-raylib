@@ -31,6 +31,8 @@ jobs:
         device:
           - alias: m5stack-atom-s3r
             example: esp32s3/m5stack-atom-s3r_hello
+          - alias: m5stack-core2
+            example: esp32/m5stack-core2_hello
           - alias: esp32-s3-box-3
             example: esp32s3/espressif-esp32-s3-box-3_hello
           - alias: espressif-esp32-s3-lcd-ev-board
@@ -91,6 +93,8 @@ jobs:
       matrix:
         device:
           - alias: m5stack-atom-s3r
+            example: esp32s3/m5stack-core2_hello
+          - alias: m5stack-core2
             example: esp32s3/m5stack-atom-s3r_hello
           - alias: esp32-s3-box-3
             example: esp32s3/espressif-esp32-s3-box-3_hello
@@ -131,3 +135,4 @@ jobs:
           # (this example dir) and reads flash offsets from its build/flash_args.
           cd raylib/examples/${{ matrix.device.example }}
           "$GITHUB_WORKSPACE/espbrew" flash --cluster "${{ secrets.ESPBREW_CLUSTER }}" --filter-alias "${{ matrix.device.alias }}"
+          "$GITHUB_WORKSPACE/espbrew" monitor --cluster "${{ secrets.ESPBREW_CLUSTER }}" --filter-alias "${{ matrix.device.alias }}" --duration 5
