@@ -15,11 +15,12 @@ on:
 jobs:
   # Build job (GitHub-hosted runner).
   #
-  # Builds each example with ESP-IDF and uploads the whole build/ directory as a
-  # GitHub artifact. The subsequent "flash" job downloads these artifacts on the
+  # Builds each example with ESP-IDF, then uploads only the files espbrew needs
+  # to flash it (flash_args + the images it lists), not the whole build/ dir.
+  # The subsequent "flash" job downloads these artifacts on the
   # local (self-hosted) hardware runner instead of rebuilding, then flashes every
-  # board via espbrew. All orchestration — expanding artifacts, flashing and
-  # monitoring every board IN PARALLEL (the cluster leader's worker pool handles
+  # board via espbrew. All orchestration — resolving each board's images from
+  # its artifact dir, flashing and monitoring every board IN PARALLEL (the cluster leader's worker pool handles
   # concurrency, so the phase takes ~the longest board, not the sum), tracking
   # per-board results, and printing a concise GitHub-annotated report — lives
   # inside espbrew, driven by the boards.yaml manifest.
@@ -87,20 +88,26 @@ jobs:
           ARTIFACT_NAME="flash-files-${SAFE_NAME//\//-}"
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_ENV
 
+      - name: Pack minimal flash artifact
+        run: |
+          set -euo pipefail
+          cd raylib/examples/${{ matrix.device.example }}
+          bash "$GITHUB_WORKSPACE/scripts/pack-flash-artifact.sh" build build-flash
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{ env.artifact_name }}
-          path: raylib/examples/${{ matrix.device.example }}/build
+          path: raylib/examples/${{ matrix.device.example }}/build-flash
           retention-days: 7
 
   # Flash job (local self-hosted hardware runner).
   #
   # Downloads the build artifacts produced by the "build" job and flashes each
   # board via espbrew. The `flash-batch` command (a top-level espbrew command,
-  # NOT `flash --manifest`) drives everything from boards.yaml: it expands the
-  # artifacts, flashes + monitors every board in parallel, tracks results, and
-  # prints a concise GitHub-annotated report.
+  # NOT `flash --manifest`) drives everything from boards.yaml: it reads each
+  # board's images from its artifact build dir, flashes + monitors every board in
+  # parallel, tracks results, and prints a concise GitHub-annotated report.
   #
   # The monitor uses --exit-on-error so a board that prints "abort() was called
   # at PC" (a boot/firmware crash) fails immediately.
@@ -166,9 +173,10 @@ jobs:
           set -euo pipefail
           # espbrew auto-detects the CI environment (GITHUB_ACTIONS=1) and prints a
           # concise, annotation-rich report instead of the interactive progress bar.
-          # flash-batch reads boards.yaml, expands each artifact, flashes + monitors
-          # every board in parallel, and exits non-zero if any non-optional board
-          # fails — failing this step (and the run).
+          # flash-batch reads boards.yaml, reads each board's images from its
+          # artifact build dir, flashes + monitors every board in parallel, tracks
+          # results, and exits non-zero if any non-optional board fails — failing
+          # this step (and the run).
           #
           # Overrides, if ever needed: --ci (force CI output), --interactive
           # (keep the progress bar even in CI), --quiet (reduced output),
