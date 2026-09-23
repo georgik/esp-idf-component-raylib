@@ -113,7 +113,7 @@ jobs:
     if: always()
     env:
       ESPBREW_CLUSTER: ${{ secrets.ESPBREW_CLUSTER }}
-      ESPBREW_VERSION: v0.8.0
+      ESPBREW_VERSION: v0.8.1
     steps:
       - name: Checkout repo
         uses: actions/checkout@v7.0.1
