@@ -153,40 +153,44 @@ jobs:
             cd raylib/examples/${{ matrix.board }}
             idf.py build
 
+      - name: Download espbrew (arch-aware)
+        # The pack step below uses `espbrew artifact pack` — the validated
+        # file-selection algorithm — instead of hand-written cp/prune logic that
+        # could forget a directory. espbrew is a single tiny binary, so
+        # downloading it here (after the heavy idf.py install) is negligible.
+        # If a runner truly cannot install espbrew, the `--print` escape hatch
+        # emits POSIX shell (cp/mkdir only) that reproduces the same pack.
+        run: |
+          set -euo pipefail
+          case "$(uname -m)" in
+            x86_64)  ESPBREW_ARCH="linux-amd64" ;;
+            aarch64) ESPBREW_ARCH="linux-arm64" ;;
+            *)       ESPBREW_ARCH="linux-amd64" ;;
+          esac
+          echo "Downloading espbrew-${ESPBREW_ARCH}"
+          curl -fsSL \
+            "https://github.com/georgik/espbrew-go/releases/download/v0.10.0/espbrew-${ESPBREW_ARCH}" \
+            -o espbrew
+          chmod +x ./espbrew
+          ./espbrew --version
+
       - name: Pack espbrew-ready artifact
-        # Produce pack-<basename>/ that espbrew's ESP-IDF detector recognises:
-        #   * CMakeLists.txt        — project marker
-        #   * sdkconfig (or .defaults) — project marker
-        #   * build/                — build.ninja + flash_args +
-        #                             bootloader/partition_table/app .bin files
-        # The detector keys on the markers, reads flash_args for the exact flash
-        # offsets, and uploads each image to the leader. managed_components is a
-        # SIBLING of build/ (not inside it), so copying build/ alone keeps the
-        # artifact lean.
+        # `espbrew artifact pack` selects exactly the files espbrew's ESP-IDF
+        # detector needs and preserves their on-disk layout, so the downloaded
+        # pack-<basename>/ is recognised and flashed without any hand-written
+        # cp/prune logic. It reads build/flash_args for the exact flash offsets
+        # and copies bootloader / partition_table / app .bin (plus the project
+        # markers CMakeLists.txt + sdkconfig(.defaults)). Heavy build outputs
+        # (objects/, *.o, *.d) are never selected, so the artifact stays lean.
+        # managed_components is a SIBLING of build/ and is therefore never copied.
         id: pack
         run: |
           set -euo pipefail
-          example="raylib/examples/${{ matrix.board }}"
           base="$(basename "${{ matrix.board }}")"
           pack="pack-$base"
-          rm -rf "$pack"
-          mkdir -p "$pack"
-
-          cp "$example/CMakeLists.txt" "$pack/"
-          if [ -f "$example/sdkconfig" ]; then
-            cp "$example/sdkconfig" "$pack/"
-          else
-            cp "$example/sdkconfig.defaults" "$pack/"
-          fi
-
-          cp -r "$example/build" "$pack/build"
-          # Prune heavy, espbrew-unneeded build outputs to keep the artifact lean.
-          find "$pack/build" -mindepth 1 -maxdepth 1 -type d \
-            \( -name objects -o -name generated -o -name CMakeFiles \
-               -o -name boot_stub -o -name esp_app_desc \
-               -o -name idf_component_registry \) -exec rm -rf {} + || true
-          find "$pack/build" -type f \( -name '*.o' -o -name '*.d' \) -delete || true
-
+          ./espbrew artifact pack \
+            --project "raylib/examples/${{ matrix.board }}" \
+            --out "$pack"
           echo "base=$base" >> "$GITHUB_OUTPUT"
           echo ">>> packed $base:"
           ls -la "$pack"
@@ -252,7 +256,7 @@ jobs:
           esac
           echo "Downloading espbrew-${ESPBREW_ARCH}"
           curl -fsSL \
-            "https://github.com/georgik/espbrew-go/releases/download/v0.8.1/espbrew-${ESPBREW_ARCH}" \
+            "https://github.com/georgik/espbrew-go/releases/download/v0.10.0/espbrew-${ESPBREW_ARCH}" \
             -o espbrew
           chmod +x ./espbrew
           ./espbrew --version
