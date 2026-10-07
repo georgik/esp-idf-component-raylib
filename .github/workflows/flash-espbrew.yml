@@ -261,14 +261,24 @@ jobs:
           chmod +x ./espbrew
           ./espbrew --version
 
+      - name: Resolve packed artifact name
+        # The `build` job uploaded the artifact under `pack-<basename>` (the last
+        # path component of the board), not the full `esp32s3/…` board path —
+        # GitHub artifact names cannot contain '/'. The `steps` context is
+        # per-job, so we cannot reuse the build job's output; recompute the
+        # basename here and reuse it for the download.
+        id: packmeta
+        run: |
+          echo "base=$(basename "${{ matrix.board }}")" >> "$GITHUB_OUTPUT"
+
       - name: Download firmware pack
-        # Downloads the per-board artifact uploaded by the `build` job. A matrix
-        # expression cannot use the `steps` context, so the download must be a
-        # real `uses:` step.
-        uses: actions/download-artifact@v4
+        # Downloads the per-board artifact uploaded by the `build` job. It must
+        # be a real `uses:` step (a matrix expression cannot use the `steps`
+        # context), so the resolved name is produced by the preceding run step.
+        uses: actions.download-artifact@v4
         with:
-          name: pack-${{ matrix.board }}
-          path: pack-${{ matrix.board }}/
+          name: pack-${{ steps.packmeta.outputs.base }}
+          path: pack-${{ steps.packmeta.outputs.base }}/
 
       - name: Flash + snap ${{ matrix.board }}
         run: |
