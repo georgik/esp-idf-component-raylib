@@ -275,7 +275,7 @@ jobs:
         # Downloads the per-board artifact uploaded by the `build` job. It must
         # be a real `uses:` step (a matrix expression cannot use the `steps`
         # context), so the resolved name is produced by the preceding run step.
-        uses: actions.download-artifact@v4
+        uses: actions/download-artifact@v4
         with:
           name: pack-${{ steps.packmeta.outputs.base }}
           path: pack-${{ steps.packmeta.outputs.base }}/
