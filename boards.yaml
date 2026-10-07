@@ -1,0 +1,28 @@
+# Boards that can be flashed in CI via the self-hosted ESPBrew runner.
+#
+# This is the single source of truth for the "flash" job (see
+# .github/workflows/flash-espbrew.yml). Each entry MUST use an `alias` registered
+# in the espbrew cluster (see the espbrew.toml ConfigMap on the leader). Aliases
+# that are not registered have no hardware and are skipped.
+#
+# `project` is the example directory built by the `build` job
+# (pack-<basename>/, where basename is the last path component). The build step
+# produces an espbrew-ready ESP-IDF artifact: CMakeLists.txt + sdkconfig + build/
+# (bootloader/partition-table/app .bin + flash_args).
+
+boards:
+  # --- ESP32-S3 boards with registered hardware ---
+  - alias: esp32-s3-box-3
+    project: esp32s3/espressif-esp32-s3-box-3_hello
+  - alias: esp32-s3-lcd-ev-board
+    project: esp32s3/espressif-esp32-s3-lcd-ev-board_hello
+  - alias: m5stack-atom-s3
+    project: esp32s3/m5stack-atom-s3_hello
+  - alias: m5stack-atom-s3r
+    project: esp32s3/m5stack-atom-s3r_hello
+
+  # --- ESP32 (original) board with registered hardware ---
+  # NB: the leader records this board's chip as "esp32-s3" (a mapping quirk);
+  # it still flashes fine because espbrew auto-detects the firmware.
+  - alias: m5stack-core2
+    project: esp32/m5stack-core2_hello

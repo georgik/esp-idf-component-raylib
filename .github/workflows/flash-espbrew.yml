@@ -1,0 +1,429 @@
+name: Flash & Snap via ESPBrew
+
+# Manual-only hardware workflow for the ESP-IDF raylib examples.
+#
+#   * `build`  -> ubuntu: runs `idf.py build` for each selected example and packs
+#                 a minimal espbrew-ready ESP-IDF artifact per board
+#                 (`pack-<basename>/{CMakeLists.txt,sdkconfig,build/...}`). The
+#                 build target is derived from the example path prefix
+#                 (esp32s3/* -> esp32s3, esp32/* -> esp32).
+#   * `snap`   -> [espbrew] self-hosted runner. That runner is only a *client*
+#                 to the ESPBrew cluster leader (the physical board lives on the
+#                 leader), so `espbrew snap` auto-detects the project from the
+#                 downloaded pack-<basename>, flashes the bootloader/partition
+#                 table/app images at their flash_args offsets, and captures a
+#                 camera frame. No manual flash plan is required.
+#   * `deploy` -> ubuntu: assembles the GitHub Pages site (a per-board hardware
+#                 screenshot gallery). Only the frames that were actually
+#                 captured are staged, so a partial run still publishes a correct
+#                 gallery.
+#
+# Board selection:
+#
+#   The `boards` input is a comma-separated list of example dirs. Leave it at the
+#   default to build/flash every registered board; set it to a single example to
+#   fine-tune just that one. The list mirrors boards.yaml (the single source of
+#   truth for the self-hosted flash job) and each entry MUST map to an alias
+#   registered in the espbrew cluster — examples without registered hardware are
+#   omitted from boards.yaml (see the note at the bottom of the file).
+#
+# Keep-going:
+#
+#   If some examples fail to build, the others still flash + snapshot, and the
+#   gallery still publishes from whatever frames were captured. A board whose
+#   build failed has no pack artifact, so its `snap` instance downloads nothing
+#   (continue-on-error) and is SKIPPED in the Flash step, while every board that
+#   DID build continues to flash + snap. See `always()` on the snap/deploy jobs.
+#
+# Security: this workflow only triggers on manual dispatch, so pull requests
+# (including from forks) can never execute steps on the self-hosted hardware
+# runner. The snap job also carries a guard step as defense in depth. See the
+# note at the bottom of this file about the matching GitHub repository settings.
+
+on:
+  workflow_dispatch:
+    inputs:
+      boards:
+        description: 'Comma-separated example dirs to build/flash (default: all registered boards)'
+        type: string
+        default: 'esp32s3/espressif-esp32-s3-box-3_hello, esp32s3/espressif-esp32-s3-lcd-ev-board_hello, esp32s3/m5stack-atom-s3_hello, esp32s3/m5stack-atom-s3r_hello, esp32/m5stack-core2_hello'
+      esp_idf_version:
+        description: 'ESP-IDF version'
+        type: choice
+        options:
+          - 'release-v6.1'
+          - 'release-v5.2'
+          - 'release-v5.1'
+          - 'latest'
+        default: 'release-v6.1'
+      enable_snap:
+        description: 'Flash + capture a hardware snapshot via espbrew snap'
+        type: boolean
+        default: true
+      publish_gallery:
+        description: 'Deploy hardware screenshot gallery to GitHub Pages'
+        type: boolean
+        default: true
+      snap_duration:
+        description: 'Snap capture duration (seconds)'
+        type: string
+        default: '10'
+
+# Self-hosted runners still need read access to the repository contents.
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Parse the comma-separated `boards` input into a JSON array ONCE, then emit
+  # it as a job output. `build` and `snap` consume it via `needs.setup`.
+  #
+  # A matrix expression may only use the `github`, `inputs`, `needs`, `vars`
+  # contexts (never `steps`), so the parse cannot live inside a matrix step —
+  # it must run in a job that the matrix jobs `need`.
+  # ---------------------------------------------------------------------------
+  setup:
+    name: Parse board selection
+    runs-on: ubuntu-latest
+    outputs:
+      boards: ${{ steps.parse.outputs.json }}
+    steps:
+      - name: Parse selected boards
+        id: parse
+        env:
+          BOARDS_INPUT: "${{ inputs.boards }}"
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a parts <<< "${BOARDS_INPUT}"
+          json="["
+          first=1
+          for b in "${parts[@]}"; do
+            b="${b//[[:space:]]/}"
+            [ -z "$b" ] && continue
+            if [ "$first" -eq 1 ]; then json+="\"$b\""; first=0; else json+=", \"$b\""; fi
+          done
+          json+="]"
+          if [ "$first" -eq 1 ]; then
+            echo "::error::no boards selected (boards input was empty)" >&2
+            exit 1
+          fi
+          echo "json=$json" >> "$GITHUB_OUTPUT"
+          echo "selected boards: ${json}"
+
+  # ---------------------------------------------------------------------------
+  # Build + pack the selected examples. One matrix entry per example; each entry
+  # builds and packs its own example.
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build + pack
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        board: ${{ fromJSON(needs.setup.outputs.boards) }}
+    steps:
+      - name: Checkout (recursive submodules)
+        # The raylib component depends on the upstream raysan5/raylib submodule
+        # and on components fetched from the IDF component registry, so the
+        # checkout must be recursive.
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set ESP-IDF target from example path
+        run: |
+          case "${{ matrix.board }}" in
+            esp32s3/*) echo "TARGET=esp32s3" >> "$GITHUB_ENV" ;;
+            esp32/*)   echo "TARGET=esp32"   >> "$GITHUB_ENV" ;;
+            *) echo "::error::unknown example target for: ${{ matrix.board }}"; exit 1 ;;
+          esac
+
+      - name: ESP-IDF build
+        # Mirrors .github/workflows/build-and-test-examples.yml. `idf.py build`
+        # writes <example>/sdkconfig and <example>/build/ (bootloader/,
+        # partition_table/, app .bin, flash_args, ...).
+        uses: espressif/esp-idf-ci-action@v1.1.0
+        with:
+          esp_idf_version: ${{ inputs.esp_idf_version }}
+          target: ${{ env.TARGET }}
+          path: '.'
+          command: |
+            set -e
+            cd raylib/examples/${{ matrix.board }}
+            idf.py build
+
+      - name: Pack espbrew-ready artifact
+        # Produce pack-<basename>/ that espbrew's ESP-IDF detector recognises:
+        #   * CMakeLists.txt        — project marker
+        #   * sdkconfig (or .defaults) — project marker
+        #   * build/                — build.ninja + flash_args +
+        #                             bootloader/partition_table/app .bin files
+        # The detector keys on the markers, reads flash_args for the exact flash
+        # offsets, and uploads each image to the leader. managed_components is a
+        # SIBLING of build/ (not inside it), so copying build/ alone keeps the
+        # artifact lean.
+        id: pack
+        run: |
+          set -euo pipefail
+          example="raylib/examples/${{ matrix.board }}"
+          base="$(basename "${{ matrix.board }}")"
+          pack="pack-$base"
+          rm -rf "$pack"
+          mkdir -p "$pack"
+
+          cp "$example/CMakeLists.txt" "$pack/"
+          if [ -f "$example/sdkconfig" ]; then
+            cp "$example/sdkconfig" "$pack/"
+          else
+            cp "$example/sdkconfig.defaults" "$pack/"
+          fi
+
+          cp -r "$example/build" "$pack/build"
+          # Prune heavy, espbrew-unneeded build outputs to keep the artifact lean.
+          find "$pack/build" -mindepth 1 -maxdepth 1 -type d \
+            \( -name objects -o -name generated -o -name CMakeFiles \
+               -o -name boot_stub -o -name esp_app_desc \
+               -o -name idf_component_registry \) -exec rm -rf {} + || true
+          find "$pack/build" -type f \( -name '*.o' -o -name '*.d' \) -delete || true
+
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo ">>> packed $base:"
+          ls -la "$pack"
+          echo "--- build/ ---"
+          ls -la "$pack/build"
+          if [ -f "$pack/build/flash_args" ]; then
+            echo "--- flash_args ---"
+            cat "$pack/build/flash_args"
+          fi
+
+      - name: Upload pack-${{ steps.pack.outputs.base }}
+        # Minimal espbrew-ready ESP-IDF project so espbrew auto-discovers it on
+        # the runner. include-hidden-files keeps any dot-files (e.g. .ninja_log)
+        # from being dropped.
+        if: steps.pack.outputs.base != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: pack-${{ steps.pack.outputs.base }}
+          path: pack-${{ steps.pack.outputs.base }}/
+          include-hidden-files: true
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Flash + capture a hardware snapshot per selected example on the self-hosted
+  # ESPBrew runner. Keep-going: runs even when some builds failed (a board whose
+  # build failed is simply SKIPPED here — see the Flash step guards).
+  # ---------------------------------------------------------------------------
+  snap:
+    name: Flash & snap (espbrew)
+    needs: [ build, setup ]
+    # `always()` lifts the implicit "all needed jobs must succeed" gating on
+    # needs: [ build, setup ], so the job runs even when some builds failed.
+    if: github.event.inputs.enable_snap == 'true' && always()
+    runs-on: [espbrew]
+    env:
+      SNAP_DURATION: "${{ github.event.inputs.snap_duration }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        board: ${{ fromJSON(needs.setup.outputs.boards) }}
+    steps:
+      # --- Security: never run on untrusted PR / fork code -------------------
+      - name: Refuse to run on PRs / forks
+        if: github.event.pull_request != null || github.event_name != 'workflow_dispatch'
+        run: |
+          echo "::error::This hardware workflow only runs on manual dispatch."
+          echo "::error::It must never execute on pull requests or fork contributions."
+          exit 1
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Download espbrew (arch-aware)
+        run: |
+          set -euo pipefail
+          # Match the espbrew release to the runner arch (x64 vs arm64).
+          case "$(uname -m)" in
+            x86_64)  ESPBREW_ARCH="linux-amd64" ;;
+            aarch64) ESPBREW_ARCH="linux-arm64" ;;
+            *)       ESPBREW_ARCH="linux-amd64" ;;
+          esac
+          echo "Downloading espbrew-${ESPBREW_ARCH}"
+          curl -fsSL \
+            "https://github.com/georgik/espbrew-go/releases/download/v0.8.1/espbrew-${ESPBREW_ARCH}" \
+            -o espbrew
+          chmod +x ./espbrew
+          ./espbrew --version
+
+      - name: Download firmware pack
+        # Downloads the per-board artifact uploaded by the `build` job. A matrix
+        # expression cannot use the `steps` context, so the download must be a
+        # real `uses:` step.
+        uses: actions/download-artifact@v4
+        with:
+          name: pack-${{ matrix.board }}
+          path: pack-${{ matrix.board }}/
+
+      - name: Flash + snap ${{ matrix.board }}
+        run: |
+          set -euo pipefail
+          board="${{ matrix.board }}"
+          base="$(basename "$board")"
+          pack="pack-$base"
+
+          # Resolve the espbrew alias from boards.yaml (falls back to the example
+          # basename when a board is not registered there).
+          alias="$(awk -v p="$board" '
+            /^  - alias:/ { a=$3 }
+            /^    project:/ { if ($2 == p) print a }
+          ' boards.yaml)"
+          [ -z "$alias" ] && alias="$base"
+          echo ">>> alias=$alias  (example=$board)"
+
+          # Keep-going: an example whose build failed never produced a pack, so
+          # there is nothing to flash. Skip that example (like the conways/spooky
+          # flash loops do) and let the examples that DID build continue.
+          if [ ! -d "$pack" ] || [ ! -f "$pack/CMakeLists.txt" ] || [ ! -d "$pack/build" ]; then
+            echo "::warning::$base pack artifact missing (build skipped/failed); skipping flash"
+            exit 0
+          fi
+
+          # Run from inside the pack dir so espbrew auto-detects the ESP-IDF
+          # project (CMakeLists.txt + sdkconfig + build/), reads flash_args, and
+          # the cluster leader converts the images at their real offsets.
+          # espbrew writes the captured frame into a per-board zip at
+          # snapshots/$base.zip (repo root) so it can be uploaded as an artifact
+          # for the gallery deploy job. The --zip path is relative to pack-$base/,
+          # hence the ../ above.
+          ( cd "$pack" \
+            && espbrew snap \
+                --filter-alias "$alias" \
+                --save-dir snap-out \
+                --zip "../snapshots/$base.zip" \
+                --duration "$SNAP_DURATION" )
+
+      - name: Upload snapshot zips
+        # Upload the raw espbrew snapshot zips (one per example) so the gallery
+        # deploy job can expand them. File extraction happens on the
+        # GitHub-hosted deploy runner, NOT on this self-hosted hardware runner.
+        if: hashFiles('snapshots/*.zip') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: gallery-zips
+          path: snapshots/
+          retention-days: 30
+
+  # ---------------------------------------------------------------------------
+  # Assemble and publish the GitHub Pages site: a per-board hardware-snapshot
+  # gallery (only the examples that were actually snapshotted appear with an
+  # image; the rest get a placeholder). Keep-going: `always()` lets the gallery
+  # publish even when some builds or the snap job failed.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy gallery (Pages)
+    needs: [ build, snap ]
+    # `always()` lets the gallery publish even when some builds or the snap job
+    # failed. It still only deploys when snap succeeded or was intentionally
+    # turned off (skipped), so a partial run always publishes a correct gallery.
+    if: github.event.inputs.publish_gallery == 'true' && always() && (needs.snap.result == 'success' || needs.snap.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download snapshot zips
+        # Fails silently when nothing was snapshotted (enable_snap=false or the
+        # runner produced no frames).
+        uses: actions/download-artifact@v4
+        with:
+          name: gallery-zips
+          path: deploy/site/zips
+        continue-on-error: true
+
+      - name: Assemble gallery
+        # Expand each example's snapshot zip into its own subdir (frames from
+        # different examples never mix; -j flattens each zip's frames), then
+        # render one gallery card per example — an <img> when a frame was
+        # captured, a placeholder otherwise.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          mkdir -p deploy/site deploy/site/screenshots
+
+          cards_file="$(mktemp)"
+          : > "$cards_file"
+
+          for z in deploy/site/zips/*.zip; do
+            b="$(basename "$z" .zip)"
+            mkdir -p "deploy/site/screenshots/$b"
+            unzip -o -j "$z" -d "deploy/site/screenshots/$b" || true
+            img="$(find "deploy/site/screenshots/$b" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) 2>/dev/null | head -n 1 || true)"
+            if [ -n "$img" ]; then
+              rel="screenshots/$b/$(basename "$img")"
+              printf '    <div class="screenshot-card"><img src="%s" alt="%s hardware snapshot"><div class="screenshot-info"><h3>%s</h3><span class="status success">Snapshotted</span></div></div>\n' "$rel" "$b" "$b" >> "$cards_file"
+            else
+              printf '    <div class="screenshot-card"><div class="placeholder">No hardware snapshot</div><div class="screenshot-info"><h3>%s</h3></div></div>\n' "$b" >> "$cards_file"
+            fi
+          done
+
+          cat > deploy/site/index.html <<EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Raylib Examples — ESPBrew Hardware Gallery</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: #0f1115; color: #e6e6e6; }
+            .header { background: #161b22; padding: 2rem; text-align: center; border-bottom: 1px solid #30363d; }
+            .header h1 { margin: 0; font-size: 1.5rem; }
+            .header p { color: #8b949e; margin-top: .5rem; }
+            .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+            .screenshot-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
+            .screenshot-card img { width: 100%; height: auto; display: block; }
+            .screenshot-info { padding: 1rem; }
+            .screenshot-info h3 { margin: 0 0 .5rem; font-size: 1rem; }
+            .status.success { display: inline-block; background: #1f6feb; color: #fff; padding: .15rem .5rem; border-radius: 999px; font-size: .75rem; }
+            .placeholder { padding: 4rem 1rem; text-align: center; color: #8b949e; background: #0d1117; }
+            .footer { text-align: center; padding: 2rem; color: #8b949e; font-size: .8rem; }
+            .footer a { color: #58a6ff; text-decoration: none; }
+          </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>esp-idf-component-raylib — ESPBrew Hardware Gallery</h1>
+              <p>Real hardware screenshots captured via espbrew snap</p>
+            </div>
+            <div class="gallery">
+          $(cat "$cards_file")
+            </div>
+            <div class="footer">
+              <p>Generated by <a href="https://github.com/georgik/esp-idf-component-raylib">esp-idf-component-raylib</a> CI · Powered by <a href="https://github.com/georgik/espbrew-go">espbrew</a></p>
+            </div>
+          </body>
+          </html>
+          EOF
+          rm -f "$cards_file"
+          echo "gallery written:"
+          ls -la deploy/site
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: deploy/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
